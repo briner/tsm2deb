@@ -28,8 +28,11 @@ aptitude install sysvinit-utils fakeroot cpio rpm2cpio bash rsync imagemagick
 
 usage
 -----
- - TSM_DIR=~/packaging/tsm/6.4.1
- - ```cd ${TSM_DIR}```
+ - setup
+```bash
+TSM_DIR=~/packaging/tsm/6.4.1
+cd ${TSM_DIR}
+```
  - download the version [6.4.1.0-TIV-TSMBAC-LinuxX86.tar](http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
   - [or directly the linux version 6.4.1](ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v6r4/Linux/LinuxX86/BA/v641)
  - untar it: 
