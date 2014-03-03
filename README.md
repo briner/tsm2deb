@@ -34,8 +34,9 @@ TSM_DIR=~/packaging/tsm/6.4.1
 mkdir -p ${TSM_DIR}
 cd ${TSM_DIR}
 ```
- - download the version [6.4.1.0-TIV-TSMBAC-LinuxX86.tar](http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
-  - [or directly the linux version 6.4.1](ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v6r4/Linux/LinuxX86/BA/v641)
+ - download [6.4.1.0-TIV-TSMBAC-LinuxX86.tar](ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v6r4/Linux/LinuxX86/BA/v641)
+  -find on [IBM Tivoli Storage Manager (TSM) Client 6.4.1 Downloads and READMEs](http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
+  - 
  - untar it: 
 ```bash
 tar -xf 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
