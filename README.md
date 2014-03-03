@@ -30,7 +30,7 @@ usage
 -----
  - setup
 ```bash
-TSM_DIR=~/packaging/tsm/6.4.1
+TSM_DIR=~/packaging/tsm/7.1.0.1
 mkdir -p ${TSM_DIR}
 cd ${TSM_DIR}
 ```
@@ -39,15 +39,16 @@ cd ${TSM_DIR}
   - 
  - untar it: 
 ```bash
-tar -xf 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
+tar -xf 7.1.0.1-TIV-TSMBAC-LinuxX86.tar
 ```
  - download the script tsm2deb.bash and save it to ${TSM_DIR}
 ```bash
-wget https://raw.github.com/briner/tsm2deb/6.4.1/tsm2deb.bash
+wget https://raw.github.com/briner/tsm2deb/7.4.0.1/tsm2deb.bash
 ```
  - edit the variable defined in define_variable in tsm2deb
   - TSM_ROOT
   - TSM_NAME
+  - TSM_VER
   - SHORT_ORG
   - OPT_PATH
   - EMAIL_MAINTAINER
@@ -86,9 +87,9 @@ FAQ
 - So why did we not wrap the other RPMs ?
     Our decision is based on this document:
     http://publib.boulder.ibm.com/infocenter/tsminfo/v6r3/index.jsp?topic=%2Fcom.ibm.itsm.client.doc%2Ft_inst_linuxx86client.html
- - *filepath* since it brings only filepath.ko for a special kernel
- - *JBB* since it is the daemon based on the filepath.ko
- - *cit* since this looks like a real burden
+ - filepath since it brings only filepath.ko for a special kernel
+ - JBB since it is the daemon based on the filepath.ko
+ - cit since this looks like a real burden
  - FR since we speak english
 
 

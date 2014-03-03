@@ -14,13 +14,13 @@ define_variable()
 {   
     # TSM_ROOT defines the path where the rpms are. tsm4ubuntu will work
     # in this directory
-    TSM_ROOT=~/packaging/tsm/6.4.1
+    TSM_ROOT=~/packaging/tsm/7.1.0.1
 
     # the name of the package will be
     # <short_org>-<TSM_NAME>-{ba,api..}_<TSM_VER>-<DDEB_VER>
     # so for the current case: unige-tsm-ba_6.3.0-2.deb
     TSM_NAME=TSM ; # usually it is "TSM"
-    TSM_VER=6.4.1
+    TSM_VER=7.1.0.1
     SHORT_ORG=UniGE ; # a short name of your organisation
 
     # where the tsm files will be installed without the first and the last "/"
@@ -35,8 +35,8 @@ define_variable()
     # the file dowloaded 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
     unset drpm
     declare -Ag drpm
-    drpm["crypt"]="gskcrypt64-8.0.14.26.linux.x86_64.rpm"
-    drpm["ssl"]="gskssl64-8.0.14.26.linux.x86_64.rpm"
+    drpm["crypt"]="gskcrypt64-8.0.14.28.linux.x86_64.rpm"
+    drpm["ssl"]="gskssl64-8.0.14.28.linux.x86_64.rpm"
     drpm["api"]="TIVsm-API64.x86_64.rpm"
     drpm["ba"]="TIVsm-BA.x86_64.rpm"
     #~ drpm["jbb"]="TIVsm-JBB.x86_64.rpm"
