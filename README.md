@@ -31,6 +31,7 @@ usage
  - setup
 ```bash
 TSM_DIR=~/packaging/tsm/6.4.1
+mkdir -p ${TSM_DIR}
 cd ${TSM_DIR}
 ```
  - download the version [6.4.1.0-TIV-TSMBAC-LinuxX86.tar](http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
