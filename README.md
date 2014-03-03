@@ -35,8 +35,7 @@ mkdir -p ${TSM_DIR}
 cd ${TSM_DIR}
 ```
  - download [6.4.1.0-TIV-TSMBAC-LinuxX86.tar](ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v6r4/Linux/LinuxX86/BA/v641)
-  -find on [IBM Tivoli Storage Manager (TSM) Client 6.4.1 Downloads and READMEs](http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
-  - 
+  - found on [IBM Tivoli Storage Manager (TSM) Client 6.4.1 Downloads and READMEs](http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
  - untar it: 
 ```bash
 tar -xf 7.1.0.1-TIV-TSMBAC-LinuxX86.tar
@@ -67,8 +66,8 @@ chmod +x tsm2deb.bash
  - and  this is it.
  - if you want to thanks me, add me in linkedin
 
-explaination
-------------
+explanation
+-----------
 The script is splitted in:
  - define variable: self explanatory
  - rpm2dir: extract some of the rpms to cpio_<directories>
