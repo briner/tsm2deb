@@ -1,6 +1,6 @@
 tsm2deb
 =======
-a script to nicely package tsm for debian
+a script to nicely package tsm for debian and derivatives (Mint, Ubuntu…)
 
 
 Attention
