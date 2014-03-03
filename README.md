@@ -33,13 +33,13 @@ usage
  - download the version [6.4.1.0-TIV-TSMBAC-LinuxX86.tar](http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
   - [or directly the linux version 6.4.1](ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v6r4/Linux/LinuxX86/BA/v641)
  - untar it: 
- ```bash
- tar -xf 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
- ```
+```bash
+tar -xf 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
+```
  - download the script tsm2deb.bash and save it to ${TSM_DIR}
- ```bash
- wget https://raw.github.com/briner/tsm2deb/6.4.1/tsm2deb.bash
- ```
+```bash
+wget https://raw.github.com/briner/tsm2deb/6.4.1/tsm2deb.bash
+```
  - edit the variable defined in define_variable in tsm2deb
   - TSM_ROOT
   - TSM_NAME
@@ -50,11 +50,11 @@ usage
   - all the ddeb_ver which should be 0 when doing your first packaging 
     and the get increased by one at each new version.
  - wrap them all
- ```bash
- cd ${TSM_DIR}
- chmod +x tsm2deb.bash
- ./tsm2deb.bash -esabc1
- ```
+```bash
+cd ${TSM_DIR}
+chmod +x tsm2deb.bash
+./tsm2deb.bash -esabc1
+```
  - then install
   - the all in one package : ..tsm-all
   - all the pakage excep the all in one: …tsm-crypt, …tsm-ssl, …tsm-api, …tsm-ba
