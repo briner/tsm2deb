@@ -5,11 +5,12 @@ a script to nicely package tsm for debian
 
 Attention
 ---------
-     .
-    /!\   
-   / ! \    this will only work to create deb for amd64 
-  /  !  \   so, if `uname -m` == 'x86_64', then go for it
- ---------
+this will only work to create deb for amd64
+so, if 
+```
+uname -m == 'x86_64'
+```
+then go for it
 
 What it does
 ------------
@@ -27,17 +28,38 @@ aptitude install sysvinit-utils fakeroot cpio rpm2cpio bash rsync imagemagick
 
 usage
 -----
- - TSM_DIR=~/packaging/tsm/6.4.1.0
- - download the version 6.4.0.0-TIV-TSMBAC-LinuxX86.tar (try downloading from http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
- - untar eg: into ${TSM_DIR}
- - download the script tsm2deb and save it to ~/tsm/6.4.1.0
+ - TSM_DIR=~/packaging/tsm/6.4.1
+ - ```cd ${TSM_DIR}```
+ - download the version [6.4.1.0-TIV-TSMBAC-LinuxX86.tar](http://www-01.ibm.com/support/docview.wss?rs=663&uid=swg21239415)
+  - [or directly the linux version 6.4.1](ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v6r4/Linux/LinuxX86/BA/v641)
+ - untar it: 
+ ```
+ tar -xf 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
+ ```
+ - download the script tsm2deb.bash and save it to ${TSM_DIR}
+ ```
+ wget https://raw.github.com/briner/tsm2deb/6.4.1/tsm2deb.bash
+ ```
  - edit the variable defined in define_variable in tsm2deb
- - then type
-   cd ${TSM_DIR}
-   chmod +x tsm2deb
-   ./tsm2deb
-   sudo dpkg -i *deb
- - and smile big time
+  - TSM_ROOT
+  - TSM_NAME
+  - SHORT_ORG
+  - OPT_PATH
+  - EMAIL_MAINTAINER
+  - all the drpm which should match the ```ls -l ${TSM_DIR}/*.rpm```
+  - all the ddeb_ver which should be 0 when doing your first packaging 
+    and the get increased by one at each new version.
+ - wrap them all
+ ```
+ cd ${TSM_DIR}
+ chmod +x tsm2deb.bash
+ ./tsm2deb.bash -esabc1
+ ```
+ - then install
+  - the all in one package : ..tsm-all
+  - all the pakage excep the all in one: …tsm-crypt, …tsm-ssl, …tsm-api, …tsm-ba
+ - and  this is it.
+ - if you want to thanks me, add me in linkedin
 
 explaination
 ------------
@@ -64,5 +86,6 @@ FAQ
  - *cit* since this looks like a real burden
  - FR since we speak english
 
-Hope it will help.
 
+
+Hope it will help.

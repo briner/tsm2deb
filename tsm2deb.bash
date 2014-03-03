@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # all the documentation is on the github:
-# https://github.com/briner/tsm4ubuntu-12.04
+# https://github.com/briner/tsm2deb
 # in the README
 
 if [[ $(uname -m) != 'x86_64' ]] ; then
@@ -14,7 +14,7 @@ define_variable()
 {   
     # TSM_ROOT defines the path where the rpms are. tsm4ubuntu will work
     # in this directory
-    TSM_ROOT=~/packaging/tsm/6.4.1.0
+    TSM_ROOT=~/packaging/tsm/6.4.1
 
     # the name of the package will be
     # <short_org>-<TSM_NAME>-{ba,api..}_<TSM_VER>-<DDEB_VER>
@@ -24,7 +24,7 @@ define_variable()
     SHORT_ORG=UniGE ; # a short name of your organisation
 
     # where the tsm files will be installed without the first and the last "/"
-    OPT_PATH='opt/uau/tsm' ; # usually it is "opt/tivoli/tsm"
+    OPT_PATH='usr/lib/tsm' ; # usually it is "opt/tivoli/tsm"
 
     # email of the packager of these
     EMAIL_MAINTAINER='Cedric BRINER <Cedric.Briner@UniGE.ch>'
@@ -35,11 +35,11 @@ define_variable()
     # the file dowloaded 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
     unset drpm
     declare -Ag drpm
-    drpm["crypt"]="gskcrypt64-8.0.14.14.linux.x86_64.rpm"
-    drpm["ssl"]="gskssl64-8.0.14.14.linux.x86_64.rpm"
+    drpm["crypt"]="gskcrypt64-8.0.14.26.linux.x86_64.rpm"
+    drpm["ssl"]="gskssl64-8.0.14.26.linux.x86_64.rpm"
     drpm["api"]="TIVsm-API64.x86_64.rpm"
     drpm["ba"]="TIVsm-BA.x86_64.rpm"
-    drpm["jbb"]="TIVsm-JBB.x86_64.rpm"
+    #~ drpm["jbb"]="TIVsm-JBB.x86_64.rpm"
 
     #
     # this variable define of the version of packaging for each element
@@ -50,7 +50,7 @@ define_variable()
     ddeb_ver["ssl"]="0"
     ddeb_ver["api"]="0"
     ddeb_ver["ba"]="0"
-    ddeb_ver["jbb"]="0"
+    #~ ddeb_ver["jbb"]="0"
     ddeb_ver["integration"]="0" ; # this is only used at the University of Geneva
     ddeb_ver["all"]="0" ; # this is only used for the option -1
 }
@@ -70,143 +70,143 @@ rpm2dir()
 }
 
 
-###########################################################
-# jbb journal-based-backup
-#
-wrap_jbb()
-{
-    OBJ=jbb
-
-    # constructed variable
-    define_variable
-    DEB_VER=${ddeb_ver[${OBJ}]}
-    DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
-    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
-
-    cd ${TSM_ROOT}
-
-    [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
-    mkdir -p ${DEB_BUILD}/{DEBIAN,${OPT_PATH},usr/bin,etc/init.d}
-    mkdir -p ${DEB_BUILD}/{var/log/tsm,var/cache/tsmjbb,etc/tsm}
-    rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/opt/tivoli/tsm/ ${DEB_BUILD}/${OPT_PATH}/
-    rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/etc ${DEB_BUILD}/${OPT_PATH}/etc
-    #
-    rsync -aHl --force --delete cpio_${drpm[${OBJ}]%.rpm}/usr/lib64/ ${DEB_BUILD}/${OPT_PATH}/lib/
-    # relink to the good position the library
-    cd ${DEB_BUILD}/${OPT_PATH}/lib/
-    for map in $(ls -l * | \
-                 sed "s|[[:blank:]]\{2\}| |g" | \
-                 cut -d ' ' -f9- | \
-                 sed "s| -> |<==>| ;  s|/../opt/tivoli/tsm/|/|" ) ; do
-       target=$(echo $map | sed 's|.*<==>||')
-       link_name=$(echo $map | sed 's|<==>.*||')
-       ln -sf ${target} ${link_name}
-    done
-    cd - > /dev/null
-    #
-    # LINK THE EXECUTABLE TO THE WRAPPER (the wrapper is included in the BA)
-    cd ${DEB_BUILD}/usr/bin
-    for f in tsmjbbd; do
-        ln -sf /${OPT_PATH}/bin/tsm-wrapper ${f}; done
-    cd ${TSM_ROOT}
-    #
-    # config file
-    cat > ${DEB_BUILD}/etc/tsm/tsmjbbd.ini << EOF
-; This file is the default one created for ${SHORT_ORG} by ${EMAIL_MAINTAINER}.
-; The sample one provided by IBM is on /${OPT_PATH}/client/ba/bin/tsmjbbd.ini.smp
-; and contain the description for all settings
-
-[JournalSettings]
-Errorlog=/var/log/tsm/tsmjbb_error.log
-Journaldir=/var/cache/tsmjbb
-
-
-[JournalExcludeList]
-;   Note that this list contains the journal database files.                  
-*.jdb.jbbdb
-*.jdbInc.jbbdb
-
-
-[JournaledFileSystemSettings]
-JournaledFileSystems=/home
-
-EOF
-    #
-    # 
-    #
-    # DEBIAN control
-    cat > ${DEB_BUILD}/DEBIAN/control << EOF
-Package: ${DEBNAME}
-Version: ${TSM_VER}-${DEB_VER}
-Architecture: amd64
-Maintainer: ${EMAIL_MAINTAINER}
-Section: main
-Priority: extra
-Description: jbb for ${TSM_NAME} @ ${SHORT_ORG}
-    Journal Based Backup for ${TSM_NAME}
-    TSM stands for Tivoli Storage Manager and it is a solution for backuping is
-    machine at ${SHORT_ORG}.
-EOF
-    #
-    #
-    #
-    # INIT SCRIPT
-    cat > ${DEB_BUILD}/etc/init.d/tsmjbbd << 'EOF'
-#!/bin/bash
-### BEGIN INIT INFO
-# Provides: tsmjbbd
-# Required-Start: $local_fs filepath
-# Required-Stop: $local_fs filepath
-# Default-Start: 3 5
-# Default-Stop: 0 1 2 6
-# Short-Description: TSM Journal Based Backup daemon
-# Description: Start tsmjbbd to enable Journal Based Backup.
-### END INIT INFO
-DAEMON=/usr/bin/tsmjbbd
-CONF_FILE=/etc/tsm/tsmjbbd.ini
-DIR_LOG=/var/log/tsm
-PIDFILE=/var/run/tsmjbbd.pid
-
-. /lib/lsb/init-functions
-
-start_tsm()
-{
-    log_begin_msg "Starting TSM scheduler ..."
-    start-stop-daemon -Sqb --startas /usr/bin/tsmjbbd --pidfile ${PIDFILE} --make-pidfile -- -f  /etc/tsm/tsmjbbd.ini || log_end_msg 1
-    log_end_msg 0
-}
-stop_tsm()
-{
-    log_begin_msg "Stopping TSM scheduler ..."
-    start-stop-daemon -Kqop ${PIDFILE} || log_end_msg 1
-    log_end_msg 0
-}
-
-case "$1" in
-  start)
-    start_tsm
-    ;;
-  stop)
-    stop_tsm
-    ;;
-  restart)
-    stop_tsm
-    start_tsm
-    ;;
-  *)
-    log_success_msg "Usage: /etc/init.d/tsm {start|stop|restart}"
-    exit 1
-esac
-
-exit 0
-EOF
-    #
-    chmod a+x  ${DEB_BUILD}/etc/init.d/tsmjbbd
-    #
-    #
-    # construct the package
-    fakeroot dpkg -b ${DEB_BUILD}
-}
+#~ ###########################################################
+#~ # jbb journal-based-backup
+#~ #
+#~ wrap_jbb()
+#~ {
+    #~ OBJ=jbb
+#~ 
+    #~ # constructed variable
+    #~ define_variable
+    #~ DEB_VER=${ddeb_ver[${OBJ}]}
+    #~ DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
+    #~ DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
+#~ 
+    #~ cd ${TSM_ROOT}
+#~ 
+    #~ [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
+    #~ mkdir -p ${DEB_BUILD}/{DEBIAN,${OPT_PATH},usr/bin,etc/init.d}
+    #~ mkdir -p ${DEB_BUILD}/{var/log/tsm,var/cache/tsmjbb,etc/tsm}
+    #~ rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/opt/tivoli/tsm/ ${DEB_BUILD}/${OPT_PATH}/
+    #~ rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/etc ${DEB_BUILD}/${OPT_PATH}/etc
+    #~ #
+    #~ rsync -aHl --force --delete cpio_${drpm[${OBJ}]%.rpm}/usr/lib64/ ${DEB_BUILD}/${OPT_PATH}/lib/
+    #~ # relink to the good position the library
+    #~ cd ${DEB_BUILD}/${OPT_PATH}/lib/
+    #~ for map in $(ls -l * | \
+                 #~ sed "s|[[:blank:]]\{2\}| |g" | \
+                 #~ cut -d ' ' -f9- | \
+                 #~ sed "s| -> |<==>| ;  s|/../opt/tivoli/tsm/|/|" ) ; do
+       #~ target=$(echo $map | sed 's|.*<==>||')
+       #~ link_name=$(echo $map | sed 's|<==>.*||')
+       #~ ln -sf ${target} ${link_name}
+    #~ done
+    #~ cd - > /dev/null
+    #~ #
+    #~ # LINK THE EXECUTABLE TO THE WRAPPER (the wrapper is included in the BA)
+    #~ cd ${DEB_BUILD}/usr/bin
+    #~ for f in tsmjbbd; do
+        #~ ln -sf /${OPT_PATH}/bin/tsm-wrapper ${f}; done
+    #~ cd ${TSM_ROOT}
+    #~ #
+    #~ # config file
+    #~ cat > ${DEB_BUILD}/etc/tsm/tsmjbbd.ini << EOF
+#~ ; This file is the default one created for ${SHORT_ORG} by ${EMAIL_MAINTAINER}.
+#~ ; The sample one provided by IBM is on /${OPT_PATH}/client/ba/bin/tsmjbbd.ini.smp
+#~ ; and contain the description for all settings
+#~ 
+#~ [JournalSettings]
+#~ Errorlog=/var/log/tsm/tsmjbb_error.log
+#~ Journaldir=/var/cache/tsmjbb
+#~ 
+#~ 
+#~ [JournalExcludeList]
+#~ ;   Note that this list contains the journal database files.                  
+#~ *.jdb.jbbdb
+#~ *.jdbInc.jbbdb
+#~ 
+#~ 
+#~ [JournaledFileSystemSettings]
+#~ JournaledFileSystems=/home
+#~ 
+#~ EOF
+    #~ #
+    #~ # 
+    #~ #
+    #~ # DEBIAN control
+    #~ cat > ${DEB_BUILD}/DEBIAN/control << EOF
+#~ Package: ${DEBNAME}
+#~ Version: ${TSM_VER}-${DEB_VER}
+#~ Architecture: amd64
+#~ Maintainer: ${EMAIL_MAINTAINER}
+#~ Section: main
+#~ Priority: extra
+#~ Description: jbb for ${TSM_NAME} @ ${SHORT_ORG}
+    #~ Journal Based Backup for ${TSM_NAME}
+    #~ TSM stands for Tivoli Storage Manager and it is a solution for backuping is
+    #~ machine at ${SHORT_ORG}.
+#~ EOF
+    #~ #
+    #~ #
+    #~ #
+    #~ # INIT SCRIPT
+    #~ cat > ${DEB_BUILD}/etc/init.d/tsmjbbd << 'EOF'
+#~ #!/bin/bash
+#~ ### BEGIN INIT INFO
+#~ # Provides: tsmjbbd
+#~ # Required-Start: $local_fs filepath
+#~ # Required-Stop: $local_fs filepath
+#~ # Default-Start: 3 5
+#~ # Default-Stop: 0 1 2 6
+#~ # Short-Description: TSM Journal Based Backup daemon
+#~ # Description: Start tsmjbbd to enable Journal Based Backup.
+#~ ### END INIT INFO
+#~ DAEMON=/usr/bin/tsmjbbd
+#~ CONF_FILE=/etc/tsm/tsmjbbd.ini
+#~ DIR_LOG=/var/log/tsm
+#~ PIDFILE=/var/run/tsmjbbd.pid
+#~ 
+#~ . /lib/lsb/init-functions
+#~ 
+#~ start_tsmjbbd()
+#~ {
+    #~ log_begin_msg "Starting TSM scheduler ..."
+    #~ start-stop-daemon -Sqb --startas /usr/bin/tsmjbbd --pidfile ${PIDFILE} --make-pidfile -- -f  /etc/tsm/tsmjbbd.ini || log_end_msg 1
+    #~ log_end_msg 0
+#~ }
+#~ stop_tsmjbbd()
+#~ {
+    #~ log_begin_msg "Stopping TSM scheduler ..."
+    #~ start-stop-daemon -Kqop ${PIDFILE} || log_end_msg 1
+    #~ log_end_msg 0
+#~ }
+#~ 
+#~ case "$1" in
+  #~ start)
+    #~ start_tsmjbbd
+    #~ ;;
+  #~ stop)
+    #~ stop_tsmjbbd
+    #~ ;;
+  #~ restart)
+    #~ stop_tsmjbbd
+    #~ start_tsmjbbd
+    #~ ;;
+  #~ *)
+    #~ log_success_msg "Usage: /etc/init.d/tsm {start|stop|restart}"
+    #~ exit 1
+#~ esac
+#~ 
+#~ exit 0
+#~ EOF
+    #~ #
+    #~ chmod a+x  ${DEB_BUILD}/etc/init.d/tsmjbbd
+    #~ #
+    #~ #
+    #~ # construct the package
+    #~ fakeroot dpkg -b ${DEB_BUILD}
+#~ }
 
 
 ###########################################################
@@ -902,16 +902,16 @@ echo "do fo eg: sudo dpkg  -i ${TSM_ROOT}/*deb"
 usage () {
 	scriptname=$(basename ${0})
    cat <<EOF
-Usage: $scriptname -esabcj1
+Usage: $scriptname -esabc1
        usually we do:
          - to do a package per rpm
-           $scriptname -esabcj
+           $scriptname -esabc
          - to do a package where everything is into one
-           $scriptname -esabcj1
+           $scriptname -esabc1
          - to do a package per rpm @ UNIGE
-           $scriptname -esabcju
+           $scriptname -esabcu
          - to do a package where everything is into one @ UNIGE
-           $scriptname -esabcju1
+           $scriptname -esabcu1
    -h   displays basic help
    -v   verbose
    -l   stdout and stderr to \$LOG_PATH(${LOG_PATH})
@@ -920,7 +920,6 @@ Usage: $scriptname -esabcj1
    -a   wrapp api
    -b   wrapp ba
    -c   wrapp crypt
-   -j   wrapp jbb (journal based backup)
    -1   wrapp then all in one
    -u   wrap unige
 EOF
@@ -933,11 +932,10 @@ IS_WRAP_API="False"
 IS_WRAP_BA="False"
 IS_WRAP_CRYPT="False"
 IS_WRAP_SSL="False"
-IS_WRAP_JBB="False"
 IS_WRAP_UNIGE="False"
 IS_WRAP_SOMETHING="False"
 IS_WRAP_ALL_IN_ONE="False"
-while getopts ":esabcjuh1" opt; do
+while getopts ":esabcuh1" opt; do
   case $opt in
     e)
       IS_EXTRACT="True"
@@ -964,10 +962,6 @@ while getopts ":esabcjuh1" opt; do
       ;;
     u)
       IS_WRAP_UNIGE="True"
-      IS_WRAP_SOMETHING="True"
-      ;;
-    j)
-      IS_WRAP_JBB="True"
       IS_WRAP_SOMETHING="True"
       ;;
     1)
@@ -1030,13 +1024,13 @@ then
     wrap_ba | sed -u "s|^|     |"
 fi
 
-if test "${IS_WRAP_JBB}" = "True"
-then
-    echo
-    echo " - wrap jbb"
-    echo "   --------"
-    wrap_jbb | sed -u "s|^|     |"
-fi
+#~ if test "${IS_WRAP_JBB}" = "True"
+#~ then
+    #~ echo
+    #~ echo " - wrap jbb"
+    #~ echo "   --------"
+    #~ wrap_jbb | sed -u "s|^|     |"
+#~ fi
 
 if test "${IS_WRAP_UNIGE}" = "True"
 then
