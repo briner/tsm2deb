@@ -35,7 +35,7 @@ mkdir -p ${TSM_DIR}
 cd ${TSM_DIR}
 ```
  - download [7.1.0.1-TIV-TSMBAC-LinuxX86.tar](ftp://public.dhe.ibm.com/storage/tivoli-storage-management/patches/client/v7r1/Linux/LinuxX86/BA/v710/7.1.0.1-TIV-TSMBAC-LinuxX86.tar)
-  - found on [IBM Tivoli Storage Manager (TSM) client 7.1.0.x interim fix downloads](http://www-01.ibm.com/support/docview.wss?uid=swg24036985aa)
+  - found on [IBM Tivoli Storage Manager (TSM) client 7.1.0.x interim fix downloads](http://www-01.ibm.com/support/docview.wss?uid=swg24036985)
  - untar it: 
 ```bash
 tar -xf 7.1.0.1-TIV-TSMBAC-LinuxX86.tar
