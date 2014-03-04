@@ -568,8 +568,8 @@ EOF
     cat > ${DEB_BUILD}/usr/share/applications/dsmj.desktop  << EOF
 [Desktop Entry]
 Name=dsmj
-Comment=This is a backup solution @ UniGE
-Exec=tsm
+Comment=tsm gui
+Exec=dsmj
 Icon=dsmwin32.png
 Terminal=false
 Type=Application
@@ -578,7 +578,7 @@ EOF
     cat > ${DEB_BUILD}/usr/share/applications/dsmc.desktop  << EOF
 [Desktop Entry]
 Name=dsmc
-Comment=This is a backup solution @ UniGE
+Comment=tsm command line interface
 Exec=dsmc
 Icon=dsmwin32.png
 Terminal=true
