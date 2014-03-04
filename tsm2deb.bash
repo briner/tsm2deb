@@ -360,7 +360,8 @@ wrap_ba()
     cd ${TSM_ROOT}
 
     [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
-    mkdir -p ${DEB_BUILD}/{DEBIAN,usr/bin,var/log/tsm,etc/init.d,${OPT_PATH}/bin}
+    mkdir -p ${DEB_BUILD}/{DEBIAN,usr/bin,var/log/tsm,${OPT_PATH}/bin}
+    mkdir -p ${DEB_BUILD}/{etc/tsm,etc/init.d}
     mkdir -p ${DEB_BUILD}/{usr/share/pixmaps,usr/share/applications}
     mkdir -p ${DEB_BUILD}/usr/share/doc/${DEBNAME}
     rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/opt/tivoli/tsm/ ${DEB_BUILD}/${OPT_PATH}/
@@ -375,53 +376,17 @@ wrap_ba()
     cd ${TSM_ROOT}
     #
     #
-    # create not configured dsm.sys and dsm.opt on ../tsm/client/ba/bin
-    #
-    #
-    # DSM.SYS
-    cat  > ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys.example << EOF
-* - copy this file under ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys
-* - uncomment the lines of the file dsm.sys
-*   under "* ----------------" by removing the "*"
-* - modify the value <change_this...> at NODENAME
-* - send to your tsm administrator the line uncommented
-* - wait for his response and change accordingly your dsm.sys
-* - test your config by invoking "dsmc i"
-* - if it works, then you might be interested to activate the daemon with
-*   - update-rc.d tsm
-*   - /etc/init.d/tsm start
-* ----------------
-*SErvername thismachine
-* COMMMethod        TCPip
-* TCPPort           1507
-* TCPServeraddress  sos7.unige.ch
-* NODENAME          <change_this_field_with_the_nodename_give_It_is_usually_the_hostname>
-* PASSWORDACCESS    generate
-* SCHEDLOGRetention 7 D
-* PRENSChedulecmd   ${OPT_PATH}/tsm/bin/notify-send-tsm.start
-* POSTNSChedulecmd  ${OPT_PATH}/tsm/bin/notify-send-tsm.stop
+    # push the dsm.opt and dsm.sys in /etc/tsm with a soft link
+    mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys.smp ${DEB_BUILD}/etc/tsm
+    mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt.smp ${DEB_BUILD}/etc/tsm
+    ln -s /etc/tsm/dsm.opt ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt
+    ln -s /etc/tsm/dsm.sys ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys
+    cat > ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/README_${SHORT_ORG^^} << EOF
+the dsm.opt and dsm.sys must reside in /${OPT_PATH}/bin as it is in the rpm delivered by IBM,
+for convenience we push them in /etc/tsm and add a link to it in /${OPT_PATH}/client/ba/bin
+so that the configuration appear
 EOF
-    #
-    #
-    # DSM.OPT
-    cat  > ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt.example << EOF
-*SErvername thismachine
-*DOMAIN     ALL-LOCAL
-EOF
-    cat > ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt << EOF
-EOF
-    cat > ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys << EOF
-*SErvername thismachine
-* COMMMethod        TCPip
-* TCPPort           1507
-* TCPServeraddress  sos7.unige.ch
-* NODENAME          <change_this_field_with_the_nodename_give_It_is_usually_the_hostname>
-* PASSWORDACCESS    generate
-* SCHEDLOGRetention 7 D
-* PRENSChedulecmd   ${OPT_PATH}/tsm/bin/notify-send-tsm.start
-* POSTNSChedulecmd  ${OPT_PATH}/tsm/bin/notify-send-tsm.stop
-EOF
-    cd ${TSM_ROOT}
+    cp ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/README_${SHORT_ORG^^} ${DEB_BUILD}/etc/tsm/README_${SHORT_ORG^^}
     #
     #
     # WRAPPER to easy the install of bin on /usr/bin and to
@@ -644,8 +609,8 @@ wrap_integration()
     cd ${TSM_ROOT}
 
     [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
-    mkdir -p ${DEB_BUILD}/{etc/tsm,usr/share/pixmaps,usr/share/applications}
-    mkdir -p ${DEB_BUILD}/{usr/bin,DEBIAN,${OPT_PATH}/bin}
+    mkdir -p ${DEB_BUILD}/{usr/share/pixmaps,usr/share/applications}
+    mkdir -p ${DEB_BUILD}/{etc/tsm,usr/bin,DEBIAN,${OPT_PATH}/bin}
 
     #
     #
@@ -714,6 +679,42 @@ fi
 EOF
     #
     chmod a+x  ${DEB_BUILD}/usr/bin/tsm
+    #
+    #
+    # create not configured dsm.sys and dsm.opt on ../tsm/client/ba/bin
+    #
+    #
+    # DSM.SYS
+    cat  > ${DEB_BUILD}/etc/tsm/dsm.sys.example@${SHORT_ORG,,} << EOF
+* - copy this file under ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys
+* - uncomment the lines of the file dsm.sys
+*   under "* ----------------" by removing the "*"
+* - modify the value <change_this...> at NODENAME
+* - send to your tsm administrator the line uncommented
+* - wait for his response and change accordingly your dsm.sys
+* - test your config by invoking "dsmc i"
+* - if it works, then you might be interested to activate the daemon with
+*   - update-rc.d tsm
+*   - /etc/init.d/tsm start
+* ----------------
+*SErvername thismachine
+* COMMMethod        TCPip
+* TCPPort           1507
+* TCPServeraddress  sos7.unige.ch
+* NODENAME          <change_this_field_with_the_nodename_give_It_is_usually_the_hostname>
+* PASSWORDACCESS    generate
+* SCHEDLOGRetention 7 D
+* PRENSChedulecmd   ${OPT_PATH}/tsm/bin/notify-send-tsm.start
+* POSTNSChedulecmd  ${OPT_PATH}/tsm/bin/notify-send-tsm.stop
+EOF
+    #
+    #
+    # DSM.OPT
+    cat  > ${DEB_BUILD}/etc/tsm/dsm.opt.example@${SHORT_ORG,,} << EOF
+*SErvername thismachine
+*DOMAIN     ALL-LOCAL
+EOF
+    cd ${TSM_ROOT}
     #
     #
     # DESKTOP tsm-configure
@@ -867,7 +868,6 @@ all_in_one()
     DEPENDSJOIN="${ADEPENDS[*]}"
     IFS=$SAVE_IFS
     DEBIAN_DEPENDS=$(echo $DEPENDSJOIN | sed -s "s|,|, |")
-    echo $DEPENDSJOIN
     cat > ${DEB_BUILD}/DEBIAN/control << EOF
 Package: ${DEBNAME}
 Version: ${TSM_VER}-${DEB_VER}

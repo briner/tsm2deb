@@ -64,7 +64,7 @@ chmod +x tsm2deb.bash
   - the all in one package : ..tsm-all
   - all the pakage excep the all in one: …tsm-crypt, …tsm-ssl, …tsm-api, …tsm-ba
  - and  this is it.
- - if you want to thanks me, add me in linkedin
+ - if you want to thanks me, add me in linkedin and endorse me :)
 
 explanation
 -----------
