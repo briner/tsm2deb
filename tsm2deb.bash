@@ -639,7 +639,8 @@ EOF
     # TSM CONFIGURE TOOL WRITTEN BY J.-M. NAEF
     cat > ${DEB_BUILD}/usr/bin/tsm-configure << EOF
 #!/bin/bash
-exec javaws "http://sos.unige.ch/eztsm/apps/servlet/jws?ezubuntu"
+echo "pas encore implémenté"
+#exec javaws "http://sos.unige.ch/eztsm/apps/servlet/jws?ezubuntu"
 EOF
     #
     chmod a+x ${DEB_BUILD}/usr/bin/tsm-configure
