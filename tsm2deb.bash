@@ -20,11 +20,12 @@ define_variable()
     # <short_org>-<TSM_NAME>-{ba,api..}_<TSM_VER>-<DDEB_VER>
     # so for the current case: unige-tsm-ba_6.3.0-2.deb
     TSM_NAME=TSM ; # usually it is "TSM"
+    TSM_CONF_DIR="/etc/adsm"
     TSM_VER=7.1.0.1
     SHORT_ORG=UniGE ; # a short name of your organisation
 
     # where the tsm files will be installed without the first and the last "/"
-    OPT_PATH='usr/lib/tsm' ; # usually it is "opt/tivoli/tsm"
+    OPT_PATH='usr/lib/adsm' ; # usually it is "opt/tivoli/tsm"
 
     # email of the packager of these
     EMAIL_MAINTAINER='Cedric BRINER <Cedric.Briner@UniGE.ch>'
@@ -361,7 +362,7 @@ wrap_ba()
 
     [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
     mkdir -p ${DEB_BUILD}/{DEBIAN,usr/bin,var/log/tsm,${OPT_PATH}/bin}
-    mkdir -p ${DEB_BUILD}/{etc/tsm,etc/init.d}
+    mkdir -p ${DEB_BUILD}/{${TSM_CONF_DIR},etc/init.d}
     mkdir -p ${DEB_BUILD}/{usr/share/pixmaps,usr/share/applications}
     mkdir -p ${DEB_BUILD}/usr/share/doc/${DEBNAME}
     rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/opt/tivoli/tsm/ ${DEB_BUILD}/${OPT_PATH}/
@@ -376,17 +377,17 @@ wrap_ba()
     cd ${TSM_ROOT}
     #
     #
-    # push the dsm.opt and dsm.sys in /etc/tsm with a soft link
-    mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys.smp ${DEB_BUILD}/etc/tsm
-    mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt.smp ${DEB_BUILD}/etc/tsm
-    ln -s /etc/tsm/dsm.opt ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt
-    ln -s /etc/tsm/dsm.sys ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys
+    # push the dsm.opt and dsm.sys in ${TSM_CONF_DIR} with a soft link
+    mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys.smp ${DEB_BUILD}/${TSM_CONF_DIR}
+    mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt.smp ${DEB_BUILD}/${TSM_CONF_DIR}
+    ln -s ${TSM_CONF_DIR}/dsm.opt ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt
+    ln -s ${TSM_CONF_DIR}/dsm.sys ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys
     cat > ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/README_${SHORT_ORG^^} << EOF
 the dsm.opt and dsm.sys must reside in /${OPT_PATH}/bin as it is in the rpm delivered by IBM,
-for convenience we push them in /etc/tsm and add a link to it in /${OPT_PATH}/client/ba/bin
+for convenience we push them in ${TSM_CONF_DIR} and add a link to it in /${OPT_PATH}/client/ba/bin
 so that the configuration appear
 EOF
-    cp ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/README_${SHORT_ORG^^} ${DEB_BUILD}/etc/tsm/README_${SHORT_ORG^^}
+    cp ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/README_${SHORT_ORG^^} ${DEB_BUILD}/${TSM_CONF_DIR}/README_${SHORT_ORG^^}
     #
     #
     # WRAPPER to easy the install of bin on /usr/bin and to
@@ -610,7 +611,7 @@ wrap_integration()
 
     [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
     mkdir -p ${DEB_BUILD}/{usr/share/pixmaps,usr/share/applications}
-    mkdir -p ${DEB_BUILD}/{etc/tsm,usr/bin,DEBIAN,${OPT_PATH}/bin}
+    mkdir -p ${DEB_BUILD}/{${TSM_CONF_DIR},usr/bin,DEBIAN,${OPT_PATH}/bin}
 
     #
     #
@@ -686,7 +687,7 @@ EOF
     #
     #
     # DSM.SYS
-    cat  > ${DEB_BUILD}/etc/tsm/dsm.sys.example@${SHORT_ORG,,} << EOF
+    cat  > ${DEB_BUILD}${TSM_CONF_DIR}/dsm.sys.example@${SHORT_ORG,,} << EOF
 * - copy this file under ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys
 * - uncomment the lines of the file dsm.sys
 *   under "* ----------------" by removing the "*"
@@ -711,7 +712,7 @@ EOF
     #
     #
     # DSM.OPT
-    cat  > ${DEB_BUILD}/etc/tsm/dsm.opt.example@${SHORT_ORG,,} << EOF
+    cat  > ${DEB_BUILD}/${TSM_CONF_DIR}/dsm.opt.example@${SHORT_ORG,,} << EOF
 *SErvername thismachine
 *DOMAIN     ALL-LOCAL
 EOF
