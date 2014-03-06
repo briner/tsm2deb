@@ -1,0 +1,121 @@
+#!/bin/bash
+SCRIPTNAME=$(basename ${0})
+DSM_SYS_DB_FN="/etc/adsm/dsm.sys.all"
+WINDOW_ICON_FP="/usr/share/pixmaps/tsm-configure.png"
+
+
+# check that dsmc is already well configured
+CMD_IS_CONFIGURED="LC_ALL=C dsmc query fi <&- >& /dev/null"
+FOUND_A_SERVERNAME="False"
+
+if ! eval ${CMD_IS_CONFIGURED}
+then
+    zenity --info --no-wrap --window-icon ${WINDOW_ICON_FP} \
+           --text "Pour configurer votre compte TSM, nous avons besoin de votre nom de compte TSM\net de votre mot de passe TSM. Le nom de compte est accessible depuis l'outil WTSM :\nhttps://sos.unige.ch/wtsm\n-> Mes comptes\n--> Détails des comptes\n---> Compte : NOM-DU-COMPTE\n\nSi votre mot de passe ne fonctionne pas changez-le depuis WTSM.\n\nSi vous n'avez pas de compte créez le depuis WTSM, n'oubliez pas de choisir 'linux'\ncomme 'Système d'exploitation',de mettre comme préférence une sauvegarde\nautomatique durant la journée et de demander des résumés de sauvegardes si vous\nsouhaitez être averti lorsque la sauvegarde a échoué."
+    sos_severs_fn=$(mktemp --suffix tsm-configure)
+    wget -qO - http://sos.unige.ch/servers.txt | grep -vE "^#" > ${sos_severs_fn}
+    if test -s ${sos_severs_fn}
+    then
+        cp ${sos_severs_fn} /etc/adsm/severs.txt
+    fi
+    rm -f ${sos_severs_fn}
+    #
+    while test "${FOUND_A_SERVERNAME}" = "False"
+    do
+        IS_INFORMATION_GIVEN="False"
+        while test "${IS_INFORMATION_GIVEN}" = "False"
+        do
+            cfgpass=$(zenity --forms \
+                --window-icon ${WINDOW_ICON_FP} \
+                --title="Configuration de TSM sur votre poste" \
+                --text="donnée du compte TSM" \
+                --add-entry="Nom du compte" \
+                --add-password="mot de passe TSM" \
+                --separator="|")
+            if test "$?" -ne "0"
+            then
+                exit
+            fi
+            nodename=$(echo $cfgpass | cut -d "|" -f1)
+            pass=$(echo $cfgpass | cut -d "|" -f2-)
+            if test -n "${nodename}" -a -n "${pass}"
+            then
+                IS_INFORMATION_GIVEN="True"
+            fi
+        done
+        #
+        # generate a dsm.sys.all
+        echo "* this file was generated to allow ${SCRIPTNAME}" > ${DSM_SYS_DB_FN}
+        echo "* to have a config described to allow dsmc to work" >> ${DSM_SYS_DB_FN}
+        echo "* as dsmc does not allow to have this information as parameter" >> ${DSM_SYS_DB_FN}
+        cat /etc/adsm/servers.txt \
+        |   while read line
+            do
+                server=$(echo $line | cut -d " " -f1)
+                port=$(echo $line | cut -d " " -f2)
+                servername=$(echo ${server} | sed 's|.unige.ch||')
+                echo "SERVERNAME ${servername}"
+                echo "    NODENAME         ${nodename}"
+                echo "    TCPSERVERADDRESS ${server}"
+                echo "    TCPPORT          ${port}"
+                echo "    PASSWORDACCESS   generate"
+                echo ""
+            done >> ${DSM_SYS_DB_FN}
+        ln -sf ${DSM_SYS_DB_FN} /etc/adsm/dsm.sys
+        echo "DOMAIN     ALL-LOCAL" > /etc/adsm/dsm.opt
+        pourcent=0
+        steps=$(( 100 / $(wc -l /etc/adsm/severs.txt | cut -d " " -f1) ))
+        for servername in $(grep SERVERNAME ${DSM_SYS_DB_FN} | cut -d " " -f2)
+        do
+            #~ echo ${servername}
+            pourcent=$(( ${pourcent} + ${steps} ))
+            echo "# sur le compte ${servername}"
+            echo "${pourcent}"
+            cmd="LC_ALL=C dsmc set password ${pass} ${pass} -servername=${servername} <&- >& /dev/null"
+            if eval $cmd
+            then
+                # zenity
+                echo "# nodename (${servername}) identifié !"
+                echo "100"
+                # write dsm.sys
+                rm /etc/adsm/dsm.sys
+                date +"* written by ${SCRIPTNAME} on %Y.%m.%d %H:%M:%S"  > /etc/adsm/dsm.sys
+                sed -n "/SERVERNAME ${servername}/"',/^$/ {/^$/ !p}'  ${DSM_SYS_DB_FN} >> /etc/adsm/dsm.sys
+                break
+            fi
+        done | zenity --progress \
+                --window-icon ${WINDOW_ICON_FP} \
+                --title="test de connexion" \
+                --auto-close \
+                --auto-kill
+        if test "$?" -ne "0"
+        then
+            exit
+        fi
+        if LC_ALL=C dsmc set password ${pass} ${pass} <&- >& /dev/null
+        then
+            zenity --info --no-wrap --window-icon ${WINDOW_ICON_FP} \
+                   --text "Les informations sont correctes\nCompte : ${nodename}\nmot de passe : $(echo ${pass} | sed "s|.|*|g")"
+            FOUND_A_SERVERNAME="True"
+        else
+            zenity --error --no-wrap ${WINDOW_ICON_FP} \
+                    --text "les informations d'authentification sont incorectes\n\nPour configurer votre compte TSM, nous avons besoin de votre nom de compte TSM\net de votre mot de passe TSM. Le nom de compte est accessible depuis l'outil WTSM :\nhttps://sos.unige.ch/wtsm\n-> Mes comptes\n--> Détails des comptes\n---> Compte : NOM-DU-COMPTE\n\nsi votre mot de passe ne fonctionne pas changez le depuis WTSM.\n\nSi vous n'avez pas de compte créez le depuis WTSM, n'oubliez pas de choisir 'linux'\ncomme 'Système d'exploitation',de mettre comme préférence une sauvegarde\nautomatique durant la journée et de demander des résumés de sauvegardes si vous\nsouhaitez être averti lorsque la sauvegarde a échoué."
+        fi
+    done
+fi
+
+#
+# Configured
+NODENAME=$(grep -i nodename /etc/adsm/dsm.sys  | sed -e "s|NOD[^ \t]*||" -e  "s| ||g")
+if LC_ALL=C dsmc query schedule | grep -q "There are no schedules associated with this node." 
+then
+    invoke-rc.d tsm stop
+    update-rc.d tsm remove
+    zenity --info --no-wrap --window-icon ${WINDOW_ICON_FP} \
+           --text "Pas de planning découvert…\nDésactivation du démon TSM.\nSi vous souhaitez un planning, activez-le par WTSM :\nhttps://sos.unige.ch/wtsm\npuis relancer cet outil pour activer le démon sur cette machine"
+else
+    update-rc.d tsm defaults
+    invoke-rc.d tsm start
+    zenity --info --window-icon ${WINDOW_ICON_FP} \
+           --text "Planning découvert…\nActivation du démon TSM.\nSi vous souhaitez enlever le planning, désactivez-le par WTSM :\nhttps://sos.unige.ch/wtsm\npuis relancer cet outil pour désactiver le démon sur cette machine"
+fi
