@@ -61,6 +61,10 @@ then
                 echo "    PASSWORDACCESS   generate"
                 echo ""
             done >> ${DSM_SYS_DB_FN}
+        old_dir_conf="/etc/adsm/backup.$(date +"%Y.%m.%d %H:%M:%S")"
+        mkdir ${old_dir_conf}
+        cp /etc/adsm/dsm.sys ${old_dir_conf}
+        cp /etc/adsm/dsm.opt ${old_dir_conf}
         ln -sf ${DSM_SYS_DB_FN} /etc/adsm/dsm.sys
         echo "DOMAIN     ALL-LOCAL" > /etc/adsm/dsm.opt
         pourcent=0
