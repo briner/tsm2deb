@@ -616,10 +616,11 @@ wrap_integration()
     #
     #
     # GUI NOTIFICATION start
+    wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm-unige.png http://ubuntu.unige.ch/img/icon/ubuntu-at-unige.png
     cat > ${DEB_BUILD}/${OPT_PATH}/bin/notify-send-tsm.start  << EOF
 #!/bin/bash
 # 60000 ms= 1min
-?notify-send -i /usr/share/pixmaps/ubuntu-at-unige.png --expire-time=60000 "Sauvegarde Start" \\
+?notify-send -i /usr/share/pixmaps/tsm-unige.png --expire-time=60000 "Sauvegarde Start" \\
   "Lancement de la sauvegarde de votre machine par TSM sur les serveurs de l'UniGE."
 EOF
     #
@@ -630,92 +631,17 @@ EOF
     cat > ${DEB_BUILD}/${OPT_PATH}/bin/notify-send-tsm.stop  << EOF
 #!/bin/bash
 # 1800000 ms= 30min
-notify-send -i /usr/share/pixmaps/ubuntu-at-unige.png  --expire-time=1800000 "Sauvegarde Stop" \\
+notify-send -i /usr/share/pixmaps/tsm-unige.png  --expire-time=1800000 "Sauvegarde Stop" \\
   "La sauvegarde de votre machines par TSM sur les seveurs de l'UniGE a abouti."
 EOF
     #
     chmod a+x ${DEB_BUILD}/${OPT_PATH}/bin/notify-send-tsm.stop
     #
     #
-    # TSM CONFIGURE TOOL WRITTEN BY J.-M. NAEF
-    cat > ${DEB_BUILD}/usr/bin/tsm-configure << EOF
-#!/bin/bash
-echo "pas encore implémenté"
-#exec javaws "http://sos.unige.ch/eztsm/apps/servlet/jws?ezubuntu"
-EOF
-    #
+    # TSM CONFIGURE TOOL WRITTEN BY cED
+    cp ~/packaging/tsm/tsm-configure ${DEB_BUILD}/usr/bin/tsm-configure
+    wget -qO - http://sos.unige.ch/servers.txt | grep -vE "^#" > ${DEB_BUILD}/etc/adsm/servers.txt
     chmod a+x ${DEB_BUILD}/usr/bin/tsm-configure
-    #
-    #
-    # FIRST SHOOT TSM LAUNCH
-    
-    cat > ${DEB_BUILD}/usr/bin/tsm << 'EOF'
-#!/bin/bash
-#
-#
-[ -f ${OPT_PATH}/tsm/client/ba/bin/dsm.sys -a -f ${OPT_PATH}/tsm/client/ba/dsm.opt ] && exec dsmj
-#
-#
-echo $LANG | grep -q fr
-if [ $? -eq 0 ]
-then
-    title="Configurer TSM ?"
-    text="TSM n'est pas configurer. Nous vous suggérons de lancer \"TSM configure\".\
-\n\t- Clic \"Oui\" pour configurer TSM (recommandé).\
-\n\t- Clic \"Non\" pour lancer l'application TSM."
-else
-    title="Configure TSM ?"
-    text="TSM is not yet configured. We suggest you to configure it with the \"TSM configuration\".\
-\n\t- Clic \"Yes\" to configure it (recommended).\
-\n\t- Clic \"No\" to launch the TSM application."
-fi
-zenity --title="$title" --question --text="$text"
-#
-#
-if [ $? -eq 0 ]
-then
-   exec tsm-configure
-else
-   exec dsmj
-fi
-EOF
-    #
-    chmod a+x  ${DEB_BUILD}/usr/bin/tsm
-    #
-    #
-    # create not configured dsm.sys and dsm.opt on ../tsm/client/ba/bin
-    #
-    #
-    # DSM.SYS
-    cat  > ${DEB_BUILD}${TSM_CONF_DIR}/dsm.sys.example@${SHORT_ORG,,} << EOF
-* - copy this file under ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys
-* - uncomment the lines of the file dsm.sys
-*   under "* ----------------" by removing the "*"
-* - modify the value <change_this...> at NODENAME
-* - send to your tsm administrator the line uncommented
-* - wait for his response and change accordingly your dsm.sys
-* - test your config by invoking "dsmc i"
-* - if it works, then you might be interested to activate the daemon with
-*   - update-rc.d tsm
-*   - /etc/init.d/tsm start
-* ----------------
-*SErvername thismachine
-* COMMMethod        TCPip
-* TCPPort           1507
-* TCPServeraddress  sos7.unige.ch
-* NODENAME          <change_this_field_with_the_nodename_give_It_is_usually_the_hostname>
-* PASSWORDACCESS    generate
-* SCHEDLOGRetention 7 D
-* PRENSChedulecmd   ${OPT_PATH}/tsm/bin/notify-send-tsm.start
-* POSTNSChedulecmd  ${OPT_PATH}/tsm/bin/notify-send-tsm.stop
-EOF
-    #
-    #
-    # DSM.OPT
-    cat  > ${DEB_BUILD}/${TSM_CONF_DIR}/dsm.opt.example@${SHORT_ORG,,} << EOF
-*SErvername thismachine
-*DOMAIN     ALL-LOCAL
-EOF
     cd ${TSM_ROOT}
     #
     #
@@ -726,25 +652,11 @@ EOF
 Name=tsm-configure
 Comment=Configure TSM the UniGE way
 Comment[fr]=Configurer TSM à la sauce UniGE
-Exec=tsm-configure
+Exec=gksu tsm-configure
 Icon=tsm-configure.png
-Terminal=false
+Terminal=False
 Type=Application
-Categories=System;ubuntu-at-unige;
-EOF
-    #
-    #
-    # DESKTOP tsm
-    wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm.png http://ubuntu.unige.ch/img/icon/tsm.png
-    cat > ${DEB_BUILD}/usr/share/applications/tsm.desktop  << EOF
-[Desktop Entry]
-Name=tsm
-Comment=This is a backup solution @ ${SHORT_ORG}
-Exec=tsm
-Icon=tsm.png
-Terminal=false
-Type=Application
-Categories=System;ubuntu-at-unige;
+Categories=System;unige;
 EOF
     #
     #
@@ -753,7 +665,7 @@ EOF
 Package: ${DEBNAME}
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
-Depends: libnotify-bin, ubuntu-at-unige, zenity, ${SHORT_ORG,,}-${TSM_NAME,,}-ba
+Depends: libnotify-bin, zenity, gksu, wget, ${SHORT_ORG,,}-${TSM_NAME,,}-ba
 Maintainer: ${EMAIL_MAINTAINER}
 Section: main
 Priority: extra
