@@ -12,13 +12,13 @@ if ! eval ${CMD_IS_CONFIGURED}
 then
     zenity --info --no-wrap --window-icon ${WINDOW_ICON_FP} \
            --text "Pour configurer votre compte TSM, nous avons besoin de votre nom de compte TSM\net de votre mot de passe TSM. Le nom de compte est accessible depuis l'outil WTSM :\nhttps://sos.unige.ch/wtsm\n-> Mes comptes\n--> Détails des comptes\n---> Compte : NOM-DU-COMPTE\n\nSi votre mot de passe ne fonctionne pas changez-le depuis WTSM.\n\nSi vous n'avez pas de compte créez le depuis WTSM, n'oubliez pas de choisir 'linux'\ncomme 'Système d'exploitation',de mettre comme préférence une sauvegarde\nautomatique durant la journée et de demander des résumés de sauvegardes si vous\nsouhaitez être averti lorsque la sauvegarde a échoué."
-    sos_severs_fn=$(mktemp --suffix tsm-configure)
-    wget -qO - http://sos.unige.ch/servers.txt | grep -vE "^#" > ${sos_severs_fn}
-    if test -s ${sos_severs_fn}
+    sos_servers_fn=$(mktemp --suffix tsm-configure)
+    wget -qO - http://sos.unige.ch/servers.txt | grep -vE "^#" > ${sos_servers_fn}
+    if test -s ${sos_servers_fn}
     then
-        cp ${sos_severs_fn} /etc/adsm/severs.txt
+        cp ${sos_servers_fn} /etc/adsm/servers.txt
     fi
-    rm -f ${sos_severs_fn}
+    rm -f ${sos_servers_fn}
     #
     while test "${FOUND_A_SERVERNAME}" = "False"
     do
@@ -34,6 +34,7 @@ then
                 --separator="|")
             if test "$?" -ne "0"
             then
+                rm -f /etc/adsm/dsmerror.log
                 exit
             fi
             nodename=$(echo $cfgpass | cut -d "|" -f1)
@@ -55,20 +56,22 @@ then
                 port=$(echo $line | cut -d " " -f2)
                 servername=$(echo ${server} | sed 's|.unige.ch||')
                 echo "SERVERNAME ${servername}"
-                echo "    NODENAME         ${nodename}"
-                echo "    TCPSERVERADDRESS ${server}"
-                echo "    TCPPORT          ${port}"
-                echo "    PASSWORDACCESS   generate"
+                echo "    NODENAME          ${nodename}"
+                echo "    TCPSERVERADDRESS  ${server}"
+                echo "    TCPPORT           ${port}"
+                echo "    PASSWORDACCESS    generate"
+                echo "    SCHEDLOGRETENTION 7 D"
+
                 echo ""
             done >> ${DSM_SYS_DB_FN}
-        old_dir_conf="/etc/adsm/backup.$(date +"%Y.%m.%d %H:%M:%S")"
+        old_dir_conf="/etc/adsm/backup.$(date +"%Y.%m.%d_%H.%M.%S")"
         mkdir ${old_dir_conf}
         cp /etc/adsm/dsm.sys ${old_dir_conf}
         cp /etc/adsm/dsm.opt ${old_dir_conf}
         ln -sf ${DSM_SYS_DB_FN} /etc/adsm/dsm.sys
         echo "DOMAIN     ALL-LOCAL" > /etc/adsm/dsm.opt
         pourcent=0
-        steps=$(( 100 / $(wc -l /etc/adsm/severs.txt | cut -d " " -f1) ))
+        steps=$(( 100 / $(wc -l /etc/adsm/servers.txt | cut -d " " -f1) ))
         for servername in $(grep SERVERNAME ${DSM_SYS_DB_FN} | cut -d " " -f2)
         do
             #~ echo ${servername}
@@ -94,12 +97,14 @@ then
                 --auto-kill
         if test "$?" -ne "0"
         then
+            rm -f /etc/adsm/dsmerror.log
             exit
         fi
         if LC_ALL=C dsmc set password ${pass} ${pass} <&- >& /dev/null
         then
+            mpdstar=$(echo ${pass} | sed "s|.|*|g")
             zenity --info --no-wrap --window-icon ${WINDOW_ICON_FP} \
-                   --text "Les informations sont correctes\nCompte : ${nodename}\nmot de passe : $(echo ${pass} | sed "s|.|*|g")"
+                   --text "Les informations sont correctes :\nnom de compte : ${nodename}\nmot de passe : ${mpdstar}"
             FOUND_A_SERVERNAME="True"
         else
             zenity --error --no-wrap ${WINDOW_ICON_FP} \
@@ -123,3 +128,5 @@ else
     zenity --info --window-icon ${WINDOW_ICON_FP} \
            --text "Planning découvert…\nActivation du démon TSM.\nSi vous souhaitez enlever le planning, désactivez-le par WTSM :\nhttps://sos.unige.ch/wtsm\npuis relancer cet outil pour désactiver le démon sur cette machine"
 fi
+
+rm -f /etc/adsm/dsmerror.log
