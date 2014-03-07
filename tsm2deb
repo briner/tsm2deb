@@ -394,11 +394,7 @@ EOF
     # let the agent to use this environment when passinf from user to root
     cat > ${DEB_BUILD}/${OPT_PATH}/bin/tsm-wrapper << EOF
 #!/bin/bash
-# dsmj can use openjdk wahou # to force the use of Sun's Java
-# dsmj can use openjdk wahou # export PATH=/usr/lib/jvm/java-6-sun/bin/:$PATH
 export DSM_DIR=/${OPT_PATH}/client/ba/bin/
-export LANG=en_US
-export LC_TYPE=en_US
 export LD_LIBRARY_PATH="/${OPT_PATH}/client/api/bin64:\
 /${OPT_PATH}/gsk8/lib/:\
 /${OPT_PATH}/lib/"
