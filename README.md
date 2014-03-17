@@ -42,7 +42,7 @@ tar -xf 7.1.0.1-TIV-TSMBAC-LinuxX86.tar
 ```
  - download the script tsm2deb and save it to ${TSM_DIR}
 ```bash
-wget https://raw.github.com/briner/tsm2deb/7.1.0.1/tsm2deb.bash
+wget https://raw.github.com/briner/tsm2deb/7.1.0.1/tsm2deb
 ```
  - edit the variable defined in define_variable in tsm2deb
   - TSM_ROOT
@@ -57,8 +57,8 @@ wget https://raw.github.com/briner/tsm2deb/7.1.0.1/tsm2deb.bash
  - wrap them all
 ```bash
 cd ${TSM_DIR}
-chmod +x tsm2deb.bash
-./tsm2deb.bash -esabc1
+chmod +x tsm2deb
+./tsm2deb -esabc1
 ```
  - then install
   - the all in one package : ..tsm-all
