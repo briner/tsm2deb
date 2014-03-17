@@ -40,7 +40,7 @@ cd ${TSM_DIR}
 ```bash
 tar -xf 7.1.0.1-TIV-TSMBAC-LinuxX86.tar
 ```
- - download the script tsm2deb.bash and save it to ${TSM_DIR}
+ - download the script tsm2deb and save it to ${TSM_DIR}
 ```bash
 wget https://raw.github.com/briner/tsm2deb/7.1.0.1/tsm2deb.bash
 ```
