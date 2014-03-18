@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 SCRIPTNAME=$(basename ${0})
 DSM_SYS_DB_FN="/etc/adsm/dsm.sys.all"
 WINDOW_ICON_FP="/usr/share/pixmaps/tsm-configure.png"
@@ -108,7 +109,7 @@ then
             FOUND_A_SERVERNAME="True"
         else
             zenity --error --no-wrap ${WINDOW_ICON_FP} \
-                    --text "les informations d'authentification sont incorectes\n\nPour configurer votre compte TSM, nous avons besoin de votre nom de compte TSM\net de votre mot de passe TSM. Le nom de compte est accessible depuis l'outil WTSM :\nhttps://sos.unige.ch/wtsm\n-> Mes comptes\n--> Détails des comptes\n---> Compte : NOM-DU-COMPTE\n\nsi votre mot de passe ne fonctionne pas changez le depuis WTSM.\n\nSi vous n'avez pas de compte créez le depuis WTSM, n'oubliez pas de choisir 'linux'\ncomme 'Système d'exploitation',de mettre comme préférence une sauvegarde\nautomatique durant la journée et de demander des résumés de sauvegardes si vous\nsouhaitez être averti lorsque la sauvegarde a échoué."
+                   --text "les informations d'authentification sont incorectes\n\nPour configurer votre compte TSM, nous avons besoin de votre nom de compte TSM\net de votre mot de passe TSM. Le nom de compte est accessible depuis l'outil WTSM :\nhttps://sos.unige.ch/wtsm\n-> Mes comptes\n--> Détails des comptes\n---> Compte : NOM-DU-COMPTE\n\nsi votre mot de passe ne fonctionne pas changez le depuis WTSM.\n\nSi vous n'avez pas de compte créez le depuis WTSM, n'oubliez pas de choisir 'linux'\ncomme 'Système d'exploitation',de mettre comme préférence une sauvegarde\nautomatique durant la journée et de demander des résumés de sauvegardes si vous\nsouhaitez être averti lorsque la sauvegarde a échoué."
         fi
     done
 fi
@@ -129,4 +130,4 @@ else
            --text "Planning découvert…\nActivation du démon TSM.\nSi vous souhaitez enlever le planning, désactivez-le par WTSM :\nhttps://sos.unige.ch/wtsm\npuis relancer cet outil pour désactiver le démon sur cette machine"
 fi
 
-rm -f /etc/adsm/dsmerror.log
+rm -f dsmerror.log
