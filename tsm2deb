@@ -25,7 +25,7 @@ define_variable()
     SHORT_ORG=UniGE ; # a short name of your organisation
 
     # where the tsm files will be installed without the first and the last "/"
-    OPT_PATH='usr/lib/adsm' ; # usually it is "opt/tivoli/tsm"
+    OPT_PATH='opt/tivoli/tsm' ; # usually it is "opt/tivoli/tsm"
 
     # email of the packager of these
     EMAIL_MAINTAINER='Cedric BRINER <Cedric.Briner@UniGE.ch>'
@@ -488,12 +488,14 @@ EOF
     #
     # DEBIAN control
     PREFIX=${SHORT_ORG,,}-${TSM_NAME,,}
-    DEPENDS="${PREFIX}-crypt, ${PREFIX}-ssl, ${PREFIX}-api, default-jre"
+    DEPENDS="${PREFIX}-crypt, ${PREFIX}-ssl, ${PREFIX}-api"
+    RECOMMENDS="default-jre"
     cat > ${DEB_BUILD}/DEBIAN/control << EOF
 Package: ${DEBNAME}
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
 Depends: ${DEPENDS}
+Recommends: ${RECOMMENDS}
 Maintainer: ${EMAIL_MAINTAINER}
 Section: main
 Priority: extra
