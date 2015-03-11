@@ -461,12 +461,17 @@ checklocale()
     local ENLOCALE=$(locale -a | grep -E  "^${DSM_LANG}$" &> /dev/null )
     if [ -z "$ENLOCALE" ] ; then
         log_warning_msg "Missing locale, generating ..."
-        # uncomment the en_US entry
-        sed --in-place=.bkp.tsm -r "s|#\s*en_US(\s+)|en_US\1|g" /etc/locale.gen
-        # if not, then add this manually
-        if ! grep -Eq "en_US\s" /etc/locale.gen
+        distrib=$(lsb_release -a | grep "Distributor ID:" | cut -d ":" -f2 | sed -r "s|^\s*(\S+)\s*$|\1|")
+        if test ${distrib} = "Debian"
         then
-            echo "en_US ISO-8859-1" >> /etc/locale.gen
+            # on debian only
+            # uncomment the en_US entry in /etc/locale.gen
+            sed --in-place=.bkp.tsm -r "s|#\s*en_US(\s+)|en_US\1|g" /etc/locale.gen
+            # if not, then add this manually
+            if ! grep -Eq "en_US\s" /etc/locale.gen
+            then
+                echo "en_US ISO-8859-1" >> /etc/locale.gen
+            fi
         fi
         locale-gen $DSM_LANG &> /dev/null
     fi
