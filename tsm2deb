@@ -458,7 +458,7 @@ stop_tsm()
 
 checklocale()
 {
-    local ENLOCALE=$(locale -a | grep -E  "${DSM_LANG}$" | grep -v utf8 > /dev/null 2>&1 )
+    local ENLOCALE=$(locale -a | grep -E  "^${DSM_LANG}$" &> /dev/null )
     if [ -z "$ENLOCALE" ] ; then
         log_warning_msg "Missing locale, generating ..."
         # uncomment the en_US entry
@@ -468,7 +468,7 @@ checklocale()
         then
             echo "en_US ISO-8859-1" >> /etc/locale.gen
         fi
-        locale-gen $DSM_LANG > /dev/null 2>&1
+        locale-gen $DSM_LANG &> /dev/null
     fi
 }
 
