@@ -23,7 +23,7 @@ It mainly rewraps the rpm file so that you can use it on debian and derivatives.
 prerequesite
 ------------
 ```bash
-aptitude install sysvinit-utils fakeroot cpio rpm2cpio bash rsync imagemagick
+aptitude install sysvinit-utils fakeroot cpio rpm2cpio bash rsync imagemagick unzip
 ```
 
 usage
