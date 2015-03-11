@@ -17,8 +17,8 @@ define_variable()
     TSM_ROOT=~/packaging/tsm/7.1.0.1
 
     # the name of the package will be
-    # <short_org>-<TSM_NAME>-{ba,api..}_<TSM_VER>-<DDEB_VER>
-    # so for the current case: unige-tsm-ba_6.3.0-2.deb
+    # <short_org>-<TSM_NAME>-{ba,api..}_<TSM_VER>-<DEB_VER>_amd64
+    # so for the current case: unige-tsm-ba_6.3.0-2_amd64.deb
     TSM_NAME=TSM ; # usually it is "TSM"
     TSM_CONF_DIR="/etc/adsm"
     TSM_VER=7.1.0.1
@@ -221,7 +221,7 @@ wrap_crypt()
     define_variable
     DEB_VER=${ddeb_ver[${OBJ}]}
     DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
-    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
+    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}_amd64
 
     cd ${TSM_ROOT}
 
@@ -262,7 +262,7 @@ wrap_ssl()
     define_variable
     DEB_VER=${ddeb_ver[${OBJ}]}
     DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
-    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
+    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}_amd64
 
     cd ${TSM_ROOT}
 
@@ -303,7 +303,7 @@ wrap_api()
     define_variable
     DEB_VER=${ddeb_ver[${OBJ}]}
     DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
-    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
+    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}_amd64
 
     cd ${TSM_ROOT}
 
@@ -356,7 +356,7 @@ wrap_ba()
     define_variable
     DEB_VER=${ddeb_ver[${OBJ}]}
     DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
-    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
+    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}_amd64
 
     cd ${TSM_ROOT}
 
@@ -437,6 +437,7 @@ EOF
 DAEMON=/usr/bin/dsmc
 DSM_LOG=/var/log/tsm
 PIDFILE=/var/run/tsm.pid
+DSM_LANG=en_US
 
 . /lib/lsb/init-functions
 
@@ -447,6 +448,7 @@ start_tsm()
     start-stop-daemon -Sqb --startas /usr/bin/dsmc --pidfile ${PIDFILE} --make-pidfile --chdir ${DSM_LOG} -- schedule || log_end_msg 1
     log_end_msg 0
 }
+
 stop_tsm()
 {
     log_begin_msg "Stopping TSM scheduler ..."
@@ -454,8 +456,25 @@ stop_tsm()
     log_end_msg 0
 }
 
+checklocale()
+{
+    local ENLOCALE=$(locale -a | grep $DSM_LANG | grep -v utf8 > /dev/null 2>&1 )
+    if [ -z "$ENLOCALE" ] ; then
+        log_warning_msg "Missing locale, generating ..."
+        # uncomment the en_US entry
+	sed --in-place=.bkp.tsm -r "s|#\s*en_US(\s+)|en_US\1|g" /etc/locale.gen
+        # if not, then add this manually
+        if ! grep -Eq "en_US\s" /etc/locale.gen
+        then
+            echo "en_US ISO-8859-1" >> /etc/locale.gen
+        fi
+        locale-gen $DSM_LANG > /dev/null 2>&1
+    fi
+}
+
 case "$1" in
   start)
+    checklocale
     start_tsm
     ;;
   stop)
@@ -463,6 +482,7 @@ case "$1" in
     ;;
   restart)
     stop_tsm
+    checklocale
     start_tsm
     ;;
   *)
@@ -602,7 +622,7 @@ wrap_integration()
     define_variable
     DEB_VER=${ddeb_ver[${OBJ}]}
     DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
-    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
+    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}_amd64
 
 
     cd ${TSM_ROOT}
@@ -692,7 +712,7 @@ all_in_one()
     define_variable
     DEB_VER=${ddeb_ver[${OBJ}]}
     DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
-    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
+    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}_amd64
     #
     #
     cd ${TSM_ROOT}
@@ -716,7 +736,7 @@ all_in_one()
         echo "- ${SUB_OBJ}"
         SUB_DEB_VER=${ddeb_ver[${SUB_OBJ}]}
         SUB_DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${SUB_OBJ}
-        SUB_DEB_BUILD=${TSM_ROOT}/${SUB_DEBNAME}_${TSM_VER}-${SUB_DEB_VER}
+        SUB_DEB_BUILD=${TSM_ROOT}/${SUB_DEBNAME}_${TSM_VER}-${SUB_DEB_VER}_amd64
         #
         # rsync
         echo -n "  - data… "
@@ -770,7 +790,7 @@ all_in_one()
             do
                 SUB_DEB_VER=${ddeb_ver[${SUB_OBJ}]}
                 SUB_DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${SUB_OBJ}
-                SUB_DEB_BUILD=${TSM_ROOT}/${SUB_DEBNAME}_${TSM_VER}-${SUB_DEB_VER}
+                SUB_DEB_BUILD=${TSM_ROOT}/${SUB_DEBNAME}_${TSM_VER}-${SUB_DEB_VER}_amd64
                 grep -E "^Depends:" ${SUB_DEB_BUILD}/DEBIAN/control | sed "s|Depends:||"
             done | tr -s " " "\n"  | sed "s|,||" | grep -v "${SHORT_ORG,,}-tsm-" \
                  | sort -u | sed '/^\s*$/d' | tr -s "\n" " " )
