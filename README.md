@@ -1,3 +1,10 @@
+TSM from IBM
+============
+now IBM does provide .deb. Bravo !
+check them out on:
+ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v7r1/Linux/LinuxX86_DEB/BA/v713/
+
+
 tsm2deb
 =======
 
