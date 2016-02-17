@@ -1,0 +1,299 @@
+#!/bin/bash
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+SCRIPTNAME=$(basename ${0})
+DSM_SYS_DB_FN="/etc/adsm/dsm.sys.all"
+WINDOW_ICON_FP="/usr/share/pixmaps/tsm-configure.png"
+CMD_IS_CONFIGURED="LC_ALL=C dsmc query fi <&- >& /dev/null"
+FOUND_A_SERVERNAME="False"
+
+usage ()
+{
+    echo "$0 --reset [cli|gtk]"
+}
+
+RESET="False"
+CLI_OR_GTK="cli"
+for i in "$@" ; do
+    case $i in
+        --reset)
+            RESET="True"
+            shift
+            ;;
+        cli)
+            CLI_OR_GTK="cli"
+            shift
+            ;;
+        gtk)
+            CLI_OR_GTK="gtk"
+            shift
+            ;;
+        -h)
+            usage
+            exit 0
+            ;;
+        *)
+            CLI_OR_GTK="cli"
+            ;;
+    esac
+done
+
+# check that dsmc is already well configured
+eval ${CMD_IS_CONFIGURED}
+is_configured=$?
+
+if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
+    if [[ $CLI_OR_GTK = "cli" ]]; then
+        echo "****************************************"
+        echo "* Information sur WTSM                 *"
+        echo "****************************************"
+        echo
+        echo "Pour configurer votre compte TSM, nous avons besoin de votre :"
+        echo " - nom de compte TSM"
+        echo " - mot de passe TSM (différent d'ISIS)"
+        echo ""
+        echo "Les informations de votre compte sont accessibles sur l'outil WTSM :  "
+        echo "  https://sos.unige.ch/wtsm"
+        echo "  -> Mes comptes"
+        echo "  --> Détails des comptes"
+        echo "  ---> Compte : NOM-DU-COMPTE"
+        echo ""
+        echo "Si votre mot de passe ne fonctionne pas, changez-le depuis WTSM."
+        echo ""
+        echo "Si vous n'avez pas de compte, créez le depuis WTSM en n'oubliant pas de :"
+        echo " - choisir \"linux\" comme \"Système d'exploitation\""
+        echo " - mettre une sauvegarde automatique durant la journée"
+        echo " - demander des résumés par courriel pour être averti d'un échec."
+        echo ""
+    elif [[ $CLI_OR_GTK = "gtk" ]]; then
+        zenity --info --no-wrap --window-icon ${WINDOW_ICON_FP} \
+               --text "Pour configurer votre compte TSM, nous avons besoin de votre :\n - nom de compte TSM\n - mot de passe TSM (différent d'ISIS).\n\nLe nom de compte est accessible depuis l'outil WTSM:\nhttps://sos.unige.ch/wtsm\n-> Mes comptes\n--> Détails des comptes\n---> Compte : NOM-DU-COMPTE\n\nSi votre mot de passe ne fonctionne pas, changez-le depuis WTSM.\n\nSi vous n'avez pas de compte, créez le depuis WTSM en n'oubliant pas de :\n - choisir 'linux'comme 'Système d'exploitation'\n - mettre une sauvegarde automatique durant la journée\n - demander des résumés par courriel pour être averti d'un échec."
+    fi
+    # get the list of servers where the tsm could be attached
+    sos_servers_fn=$(mktemp --suffix tsm-configure)
+    wget -qO - http://sos.unige.ch/servers.txt | grep -vE "^#" > ${sos_servers_fn}
+    if test -s ${sos_servers_fn}
+    then
+        cp ${sos_servers_fn} /etc/adsm/servers.txt
+    fi
+    rm -f ${sos_servers_fn}
+    #
+    while test "${FOUND_A_SERVERNAME}" = "False" ; do
+        IS_INFORMATION_GIVEN="False"
+        while test "${IS_INFORMATION_GIVEN}" = "False" ; do
+            if [[ $CLI_OR_GTK = "cli" ]]; then
+                echo "****************************************"
+                echo "* Configuration de TSM sur votre poste *"
+                echo "****************************************"
+                echo ""
+                echo "donnée du compte TSM"
+                read -p "Nom du compte    : " nodename
+                # mot de passe avec des *
+                unset pass
+                prompt="mot de passe TSM : "
+                while IFS= read -p "$prompt" -r -s -n 1 char
+                do
+                    if [[ $char == $'\0' ]]
+                    then
+                        break
+                    fi
+                    prompt='*'
+                    pass+="$char"
+                done
+                #
+                echo ""
+                echo ""
+            elif [[ $CLI_OR_GTK = "gtk" ]]; then
+                cfgpass=$(zenity --forms \
+                                 --window-icon ${WINDOW_ICON_FP} \
+                                 --title="Configuration de TSM sur votre poste" \
+                                 --text="donnée du compte TSM" \
+                                 --add-entry="Nom du compte" \
+                                 --add-password="mot de passe TSM" \
+                                 --separator="|")
+                if test "$?" -ne "0" ; then
+                    rm -f /etc/adsm/dsmerror.log
+                    exit
+                fi
+                nodename=$(echo $cfgpass | cut -d "|" -f1)
+                pass=$(echo $cfgpass | cut -d "|" -f2-)
+            fi
+            if test -n "${nodename}" -a -n "${pass}"
+            then
+                IS_INFORMATION_GIVEN="True"
+            fi
+        done
+        #
+        if [[ $CLI_OR_GTK = "cli" ]]; then
+            echo "****************************************"
+            echo "* test de connexion sur les serveurs   *"
+            echo "****************************************"
+            echo ""
+        fi
+        #
+        # generate a dsm.sys.all which will contains all the possible servers
+        echo "* this file was generated to allow ${SCRIPTNAME}" > ${DSM_SYS_DB_FN}
+        echo "* to have a config described to allow dsmc to work" >> ${DSM_SYS_DB_FN}
+        echo "* as dsmc does not allow to have this information as parameter" >> ${DSM_SYS_DB_FN}
+        cat /etc/adsm/servers.txt \
+        |   while read line
+            do
+                server=$(echo $line | cut -d " " -f1)
+                port=$(echo $line | cut -d " " -f2)
+                servername=$(echo ${server} | sed 's|.unige.ch||')
+                echo "SERVERNAME ${servername}"
+                echo "    NODENAME          ${nodename}"
+                echo "    TCPSERVERADDRESS  ${server}"
+                echo "    TCPPORT           ${port}"
+                echo "    PASSWORDACCESS    generate"
+                echo "    SCHEDLOGRETENTION 7 D"
+
+                echo ""
+            done >> ${DSM_SYS_DB_FN}
+        old_dir_conf="/etc/adsm/backup.$(date +"%Y.%m.%d_%H.%M.%S")"
+        mkdir ${old_dir_conf}
+        [[ -e /etc/adsm/dsm.sys ]] && cp /etc/adsm/dsm.sys ${old_dir_conf}
+        [[ -e /etc/adsm/dsm.opt ]] && cp /etc/adsm/dsm.opt ${old_dir_conf}
+        ln -sf ${DSM_SYS_DB_FN} /etc/adsm/dsm.sys
+        echo "DOMAIN     ALL-LOCAL" > /etc/adsm/dsm.opt
+        #
+        # test de server one by one
+        if [[ $CLI_OR_GTK = "cli" ]]; then
+            for servername in $(grep SERVERNAME ${DSM_SYS_DB_FN} | cut -d " " -f2) ; do
+                echo -n "test sur le serveur : ${servername}"
+                cmd="LC_ALL=C dsmc set password ${pass} ${pass} -servername=${servername} <&- >& /dev/null"
+                if eval $cmd
+                then
+                    echo " - identifié !"
+                    # As we have a problem for the gtk part of it, we will rewrite
+                    # dsm.sys as a way to tell the following that we found a servername
+                    rm /etc/adsm/dsm.sys
+                    date +"* written by ${SCRIPTNAME} on %Y.%m.%d %H:%M:%S"  > /etc/adsm/dsm.sys
+                    sed -n "/SERVERNAME ${servername}/"',/^$/ {/^$/ !p}'  ${DSM_SYS_DB_FN} >> /etc/adsm/dsm.sys
+                    break
+                else
+                    echo ""
+                fi
+            done
+        elif [[ $CLI_OR_GTK = "gtk" ]]; then
+            pourcent=0
+            steps=$(( 100 / $(wc -l /etc/adsm/servers.txt | cut -d " " -f1) ))
+            for servername in $(grep SERVERNAME ${DSM_SYS_DB_FN} | cut -d " " -f2) ; do
+                pourcent=$(( ${pourcent} + ${steps} ))
+                echo "# sur le compte ${servername}"
+                echo "${pourcent}"
+                cmd="LC_ALL=C dsmc set password ${pass} ${pass} -servername=${servername} <&- >& /dev/null"
+                if eval $cmd
+                then
+                    # zenity
+                    echo "# nodename (${servername}) identifié !"
+                    echo "100"
+                    # as we are inside a for loop piped to zenity, we can not
+                    # pass the value servername outside of the loop. Instead we
+                    # create a dsm.sys containing the servername !
+                    # write dsm.sys
+                    rm /etc/adsm/dsm.sys
+                    date +"* written by ${SCRIPTNAME} on %Y.%m.%d %H:%M:%S"  > /etc/adsm/dsm.sys
+                    sed -n "/SERVERNAME ${servername}/"',/^$/ {/^$/ !p}'  ${DSM_SYS_DB_FN} >> /etc/adsm/dsm.sys
+                    break
+                fi
+            done | zenity --progress \
+                    --window-icon ${WINDOW_ICON_FP} \
+                    --title="test de connexion" \
+                    --auto-close \
+                    --auto-kill
+            if test "$?" -ne "0"
+            then
+                rm -f /etc/adsm/dsmerror.log
+                exit
+            fi
+        fi
+        if LC_ALL=C dsmc set password ${pass} ${pass} <&- >& /dev/null
+        then
+            FOUND_A_SERVERNAME="True"
+            mpdstar=$(echo ${pass} | sed "s|.|*|g")
+            if [[ $CLI_OR_GTK = "cli" ]]; then
+                echo ""
+                echo "****************************************"
+                echo "* informations renseignées correctes   *"
+                echo "****************************************"
+                echo ""
+                echo "nom de compte : ${nodename}"
+                echo "mot de passe  : ${mpdstar}"
+                echo ""
+            elif [[ $CLI_OR_GTK = "gtk" ]]; then
+                zenity --info --no-wrap --window-icon ${WINDOW_ICON_FP} \
+                       --text "Les informations sont correctes :\nnom de compte : ${nodename}\nmot de passe : ${mpdstar}"
+            fi
+        else
+            if [[ $CLI_OR_GTK = "cli" ]]; then
+                echo ""
+                echo "****************************************"
+                echo "* informations renseignées incorrectes *"
+                echo "****************************************"
+                echo ""
+                echo "Pour configurer votre compte TSM, nous avons besoin de votre :"
+                echo " - nom de compte TSM"
+                echo " - mot de passe TSM (différent d'ISIS)"
+                echo ""
+                echo "Les informations de votre compte sont accessibles sur l'outil WTSM :  "
+                echo "  https://sos.unige.ch/wtsm"
+                echo "  -> Mes comptes"
+                echo "  --> Détails des comptes"
+                echo "  ---> Compte : NOM-DU-COMPTE"
+                echo ""
+                echo "Si votre mot de passe ne fonctionne pas, changez-le depuis WTSM."
+                echo ""
+                echo "Si vous n'avez pas de compte, créez le depuis WTSM en n'oubliant pas de :"
+                echo " - choisir \"linux\" comme \"Système d'exploitation\""
+                echo " - mettre une sauvegarde automatique durant la journée"
+                echo " - demander des résumés par courriel pour être averti d'un échec."
+                echo ""
+            elif [[ $CLI_OR_GTK = "gtk" ]]; then
+                zenity --error --no-wrap ${WINDOW_ICON_FP} \
+                       --text "Les informations d'authentification sont incorrectes.\n\nPour configurer votre compte TSM, nous avons besoin de votre :\n - nom de compte TSM\n - mot de passe TSM (différent d'ISIS).\n\nLe nom de compte est accessible depuis l'outil WTSM:\nhttps://sos.unige.ch/wtsm\n-> Mes comptes\n--> Détails des comptes\n---> Compte : NOM-DU-COMPTE\n\nSi votre mot de passe ne fonctionne pas, changez-le depuis WTSM.\n\nSi vous n'avez pas de compte, créez le depuis WTSM en n'oubliant pas de :\n - choisir 'linux'comme 'Système d'exploitation'\n - mettre une sauvegarde automatique durant la journée\n - demander des résumés par courriel pour être averti d'un échec."
+            fi
+        fi
+    done
+fi
+
+#
+# Configured
+NODENAME=$(grep -i nodename /etc/adsm/dsm.sys  | sed -e "s|NOD[^ \t]*||" -e  "s| ||g")
+if LC_ALL=C dsmc query schedule | grep -q "There are no schedules associated with this node."
+then
+    systemctl stop tsm >& /dev/null
+    systemctl disable tsm >& /dev/null
+    if [[ $CLI_OR_GTK = "cli" ]]; then
+        echo "****************************************"
+        echo "* Pas de planning découvert            *"
+        echo "****************************************"
+        echo ""
+        echo "Désactivation du démon TSM."
+        echo "Si vous souhaitez un planning, activez-le par WTSM:"
+        echo "  https://sos.unige.ch/wtsm"
+        echo "puis relancer cet outil pour activer le démon sur cette machine"
+        echo ""
+    elif [[ $CLI_OR_GTK = "gtk" ]]; then
+        zenity --info --no-wrap --window-icon ${WINDOW_ICON_FP} \
+               --text "Pas de planning découvert…\nDésactivation du démon TSM.\nSi vous souhaitez un planning, activez-le par WTSM :\nhttps://sos.unige.ch/wtsm\npuis relancer cet outil pour activer le démon sur cette machine"
+    fi
+else
+    systemctl enable tsm >& /dev/null
+    systemctl start tsm >& /dev/null
+    if [[ $CLI_OR_GTK = "cli" ]]; then
+        echo "****************************************"
+        echo "* Planning découvert                   *"
+        echo "****************************************"
+        echo ""
+        echo "Activation du démon TSM."
+        echo "Si vous souhaitez enlever le planning, désactivez-le par WTSM :"
+        echo "  https://sos.unige.ch/wtsm"
+        echo "puis relancer cet outil pour désactiver le démon sur cette machine"
+        echo ""
+    elif [[ $CLI_OR_GTK = "gtk" ]]; then
+        zenity --info --window-icon ${WINDOW_ICON_FP} \
+               --text "Planning découvert…\nActivation du démon TSM.\nSi vous souhaitez enlever le planning, désactivez-le par WTSM :\nhttps://sos.unige.ch/wtsm\npuis relancer cet outil pour désactiver le démon sur cette machine"
+    fi
+fi
+
+rm -f dsmerror.log
