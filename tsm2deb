@@ -14,14 +14,14 @@ define_variable()
 {   
     # TSM_ROOT defines the path where the rpms are. tsm4ubuntu will work
     # in this directory
-    TSM_ROOT=~/packaging/tsm/7.1.0.1
+    TSM_ROOT=~/packaging/tsm/7.1.3
 
     # the name of the package will be
     # <short_org>-<TSM_NAME>-{ba,api..}_<TSM_VER>-<DEB_VER>_amd64
     # so for the current case: unige-tsm-ba_6.3.0-2_amd64.deb
     TSM_NAME=TSM ; # usually it is "TSM"
     TSM_CONF_DIR="/etc/adsm"
-    TSM_VER=7.1.0.1
+    TSM_VER=7.1.3
     SHORT_ORG=UniGE ; # a short name of your organisation
 
     # where the tsm files will be installed without the first and the last "/"
@@ -36,8 +36,8 @@ define_variable()
     # the file dowloaded 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
     unset drpm
     declare -Ag drpm
-    drpm["crypt"]="gskcrypt64-8.0.14.28.linux.x86_64.rpm"
-    drpm["ssl"]="gskssl64-8.0.14.28.linux.x86_64.rpm"
+    drpm["crypt"]="gskcrypt64-8.0.50.44.linux.x86_64.rpm"
+    drpm["ssl"]="gskssl64-8.0.50.44.linux.x86_64.rpm"
     drpm["api"]="TIVsm-API64.x86_64.rpm"
     drpm["ba"]="TIVsm-BA.x86_64.rpm"
     #~ drpm["jbb"]="TIVsm-JBB.x86_64.rpm"
@@ -362,19 +362,10 @@ wrap_ba()
 
     [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
     mkdir -p ${DEB_BUILD}/{DEBIAN,usr/bin,var/log/tsm,${OPT_PATH}/bin}
-    mkdir -p ${DEB_BUILD}/{${TSM_CONF_DIR},etc/init.d}
+    mkdir -p ${DEB_BUILD}/{${TSM_CONF_DIR},etc/systemd/system/}
     mkdir -p ${DEB_BUILD}/{usr/share/pixmaps,usr/share/applications}
     mkdir -p ${DEB_BUILD}/usr/share/doc/${DEBNAME}
     rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/opt/tivoli/tsm/ ${DEB_BUILD}/${OPT_PATH}/
-    #
-    #
-    # to remove the error:
-    # ANS0102W Unable to open the message repository
-    #   /opt/uau/tsm/client/ba/bin//EN_US/dsmclientV3.cat.
-    #   The American English repository will be used instead.
-    cd ${DEB_BUILD}/${OPT_PATH}/client/ba/bin
-    ln -s ../../lang/EN_US
-    cd ${TSM_ROOT}
     #
     #
     # push the dsm.opt and dsm.sys in ${TSM_CONF_DIR} with a soft link
@@ -388,16 +379,18 @@ for convenience we push them in ${TSM_CONF_DIR} and add a link to it in /${OPT_P
 so that the configuration appear
 EOF
     cp ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/README_${SHORT_ORG^^} ${DEB_BUILD}/${TSM_CONF_DIR}/README_${SHORT_ORG^^}
-    #
+    #/etc/systemd/system/
     #
     # WRAPPER to easy the install of bin on /usr/bin and to
     # let the agent to use this environment when passinf from user to root
     cat > ${DEB_BUILD}/${OPT_PATH}/bin/tsm-wrapper << EOF
 #!/bin/bash
 export DSM_DIR=/${OPT_PATH}/client/ba/bin/
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export PATH="/usr/lib/jvm/java-8-openjdk-amd64/bin:${PATH}"
 export LD_LIBRARY_PATH="/${OPT_PATH}/client/api/bin64:\
 /${OPT_PATH}/gsk8/lib/:\
-/${OPT_PATH}/lib/"
+/${OPT_PATH}/lib/:"
 
 appname=\$(basename \$0)
 exec \${DSM_DIR}/\${appname} \$@
@@ -422,83 +415,19 @@ EOF
     #
     #
     # INIT SCRIPT
-    cat > ${DEB_BUILD}/etc/init.d/tsm << 'EOF'
-#!/bin/bash
-### BEGIN INIT INFO
-# Provides:          tsm
-# Required-Start:    $local_fs $remote_fs $network $syslog
-# Required-Stop:     $local_fs $remote_fs $network $syslog
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: Start daemon at boot time
-# Description:       Enable service provided by tsm.
-### END INIT INFO
+    cat > ${DEB_BUILD}/etc/systemd/system/tsm.service << 'EOF'
+[Unit]
+Description=Tivoli Storage Manager client daemon
 
-DAEMON=/usr/bin/dsmc
-DSM_LOG=/var/log/tsm
-PIDFILE=/var/run/tsm.pid
-DSM_LANG=en_US
+[Service]
+CPUShares=2
+Environment="LANG=en_US" "LC_ALL=en_US"
+WorkingDirectory=/var/log/tsm
+ExecStart=/usr/bin/dsmc schedule
 
-. /lib/lsb/init-functions
-
-start_tsm()
-{
-    log_begin_msg "Starting TSM scheduler ..."
-    mkdir -p ${DSM_LOG}
-    start-stop-daemon -Sqb --startas /usr/bin/dsmc --pidfile ${PIDFILE} --make-pidfile --chdir ${DSM_LOG} -- schedule || log_end_msg 1
-    log_end_msg 0
-}
-
-stop_tsm()
-{
-    log_begin_msg "Stopping TSM scheduler ..."
-    start-stop-daemon -Kqop ${PIDFILE} || log_end_msg 1
-    log_end_msg 0
-}
-
-checklocale()
-{
-    local ENLOCALE=$(locale -a | grep -E  "^${DSM_LANG}$" &> /dev/null )
-    if [ -z "$ENLOCALE" ] ; then
-        log_warning_msg "Missing locale, generating ..."
-        distrib=$(lsb_release -a | grep "Distributor ID:" | cut -d ":" -f2 | sed -r "s|^\s*(\S+)\s*$|\1|")
-        if test ${distrib} = "Debian"
-        then
-            # on debian only
-            # uncomment the en_US entry in /etc/locale.gen
-            sed --in-place=.bkp.tsm -r "s|#\s*en_US(\s+)|en_US\1|g" /etc/locale.gen
-            # if not, then add this manually
-            if ! grep -Eq "en_US\s" /etc/locale.gen
-            then
-                echo "en_US ISO-8859-1" >> /etc/locale.gen
-            fi
-        fi
-        locale-gen $DSM_LANG &> /dev/null
-    fi
-}
-
-case "$1" in
-  start)
-    checklocale
-    start_tsm
-    ;;
-  stop)
-    stop_tsm
-    ;;
-  restart)
-    stop_tsm
-    checklocale
-    start_tsm
-    ;;
-  *)
-    log_success_msg "Usage: /etc/init.d/tsm {start|stop}"
-    exit 1
-esac
-
-exit 0
+[Install]
+WantedBy=multi-user.target
 EOF
-    #
-    chmod a+x  ${DEB_BUILD}/etc/init.d/tsm
     #
     #
     # rudimentary doc for unige-ba
@@ -522,7 +451,7 @@ Architecture: amd64
 Depends: ${DEPENDS}
 Recommends: ${RECOMMENDS}
 Maintainer: ${EMAIL_MAINTAINER}
-Section: main
+Section: main/home/briner/packaging/tsm/7.1.3//cpio_/opt/tivoli/tsm
 Priority: extra
 Description: ba for ${TSM_NAME} @ ${SHORT_ORG}
  Backup Agent for ${TSM_NAME}
@@ -551,8 +480,8 @@ if [ "$1" = "configure" ]; then
         else
             echo " - tsm configuration is good and planning is enabled"
             echo " - enabling the tsm daemon"
-    	    update-rc.d tsm defaults >/dev/null
-            invoke-rc.d tsm start || exit $?
+            systemctl enable /etc/systemd/system/tsm.service >/dev/null
+            systemctl restart tsm.service || exit $?
         fi
     else
         echo " - tsm is not configured or the configuration is broken"
@@ -560,8 +489,8 @@ if [ "$1" = "configure" ]; then
         echo " - when tsm will be well configured and the schedule planned, do:"
         echo "   - update-rc.d tsm defaults"
         echo "   - invoke-rc.d tsm start"
-        invoke-rc.d tsm stop > /dev/null
-        update-rc.d -f tsm remove >/dev/null
+        systemctl stop tsm.service > /dev/null
+        systemctl disable tsm.service >/dev/null
     fi
 fi
 EOF

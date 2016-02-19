@@ -11,7 +11,7 @@ usage ()
     echo "$0 --reset [cli|gtk]"
 }
 
-RESET="False"
+RESET="None"
 CLI_OR_GTK="cli"
 for i in "$@" ; do
     case $i in
@@ -41,11 +41,41 @@ done
 eval ${CMD_IS_CONFIGURED}
 is_configured=$?
 
+if [[ ${is_configured} -eq 0  ]]; then
+    if [[ ${RESET} = "None" ]]; then
+        if [[ $CLI_OR_GTK = "cli" ]]; then
+            echo "********************************************"
+            echo "* Réinitialisation de la configuration TSM *"
+            echo "********************************************"
+            echo "Votre configuration tsm est déjà configurée."
+            echo "Souhaitez-vous réinitialiser cette configuration?"
+            read -p "Réinitialiser [o/N] : " reset
+            while true ; do
+                if [[ ( -z ${reset,,} ) || ( ${reset,,} = "o" ) ]]; then
+                    RESET="True"
+                    break
+                elif [[ ${reset,,} = "n" ]]; then
+                    RESET="False"
+                    break
+                fi
+                read -p "Réinitialiser [o/N] : " reset
+            done
+        elif [[ $CLI_OR_GTK = "gtk" ]]; then
+            zenity --question --text="Votre configuration tsm est déjà configurée.\nSouhaitez-vous réinitialiser cette configuration?"
+            if [[ $? -eq 0 ]]; then
+                RESET="True"
+            else
+                RESET="False"
+            fi
+        fi
+    fi
+fi
+
 if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
     if [[ $CLI_OR_GTK = "cli" ]]; then
-        echo "****************************************"
-        echo "* Information sur WTSM                 *"
-        echo "****************************************"
+        echo "********************************************"
+        echo "* Information sur WTSM                     *"
+        echo "********************************************"
         echo
         echo "Pour configurer votre compte TSM, nous avons besoin de votre :"
         echo " - nom de compte TSM"
@@ -81,9 +111,9 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
         IS_INFORMATION_GIVEN="False"
         while test "${IS_INFORMATION_GIVEN}" = "False" ; do
             if [[ $CLI_OR_GTK = "cli" ]]; then
-                echo "****************************************"
-                echo "* Configuration de TSM sur votre poste *"
-                echo "****************************************"
+                echo "********************************************"
+                echo "* Configuration de TSM sur votre poste     *"
+                echo "********************************************"
                 echo ""
                 echo "donnée du compte TSM"
                 read -p "Nom du compte    : " nodename
@@ -124,9 +154,9 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
         done
         #
         if [[ $CLI_OR_GTK = "cli" ]]; then
-            echo "****************************************"
-            echo "* test de connexion sur les serveurs   *"
-            echo "****************************************"
+            echo "********************************************"
+            echo "* test de connexion sur les serveurs       *"
+            echo "********************************************"
             echo ""
         fi
         #
@@ -213,9 +243,9 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
             mpdstar=$(echo ${pass} | sed "s|.|*|g")
             if [[ $CLI_OR_GTK = "cli" ]]; then
                 echo ""
-                echo "****************************************"
-                echo "* informations renseignées correctes   *"
-                echo "****************************************"
+                echo "********************************************"
+                echo "* informations renseignées correctes       *"
+                echo "********************************************"
                 echo ""
                 echo "nom de compte : ${nodename}"
                 echo "mot de passe  : ${mpdstar}"
@@ -227,9 +257,9 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
         else
             if [[ $CLI_OR_GTK = "cli" ]]; then
                 echo ""
-                echo "****************************************"
-                echo "* informations renseignées incorrectes *"
-                echo "****************************************"
+                echo "********************************************"
+                echo "* informations renseignées incorrectes     *"
+                echo "********************************************"
                 echo ""
                 echo "Pour configurer votre compte TSM, nous avons besoin de votre :"
                 echo " - nom de compte TSM"
