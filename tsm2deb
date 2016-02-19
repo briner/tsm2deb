@@ -11,7 +11,7 @@ fi
 
 
 define_variable()
-{   
+{
     # TSM_ROOT defines the path where the rpms are. tsm4ubuntu will work
     # in this directory
     TSM_ROOT=~/packaging/tsm/7.1.3
@@ -25,13 +25,13 @@ define_variable()
     SHORT_ORG=UniGE ; # a short name of your organisation
 
     # where the tsm files will be installed without the first and the last "/"
-    OPT_PATH='opt/tivoli/tsm' ; # usually it is "opt/tivoli/tsm"
+    OPT_PATH='opt/uau/tsm' ; # usually it is "opt/tivoli/tsm"
 
     # email of the packager of these
     EMAIL_MAINTAINER='Cedric BRINER <Cedric.Briner@UniGE.ch>'
-    
+
     #
-    # this variable define the name of the rpm for each element 
+    # this variable define the name of the rpm for each element
     # this are the file under ls ${TSM_ROOT} once you untar
     # the file dowloaded 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
     unset drpm
@@ -47,12 +47,13 @@ define_variable()
     # you should be "0" for your first time.
     unset ddeb_ver
     declare -Ag ddeb_ver
-    ddeb_ver["crypt"]="0" 
+    ddeb_ver["crypt"]="0"
     ddeb_ver["ssl"]="0"
     ddeb_ver["api"]="0"
     ddeb_ver["ba"]="0"
     #~ ddeb_ver["jbb"]="0"
-    ddeb_ver["integration"]="0" ; # this is only used at the University of Geneva
+    ddeb_ver["integration-cli"]="0" ; # this is only used at the University of Geneva
+    ddeb_ver["integration-gtk"]="0" ; # this is only used at the University of Geneva
     ddeb_ver["all"]="0" ; # this is only used for the option -1
 }
 
@@ -63,7 +64,7 @@ rpm2dir()
         cd ${TSM_ROOT}
 	    d=cpio_${rpm%.rpm}
         [ -d $d ] && rm -fr $d
-        echo "extracting $rpm in $d" 
+        echo "extracting $rpm in $d"
         mkdir $d
         cd $d
         rpm2cpio ../${rpm} | cpio -idm
@@ -77,15 +78,15 @@ rpm2dir()
 #~ wrap_jbb()
 #~ {
     #~ OBJ=jbb
-#~ 
+#~
     #~ # constructed variable
     #~ define_variable
     #~ DEB_VER=${ddeb_ver[${OBJ}]}
     #~ DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
     #~ DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}
-#~ 
+#~
     #~ cd ${TSM_ROOT}
-#~ 
+#~
     #~ [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
     #~ mkdir -p ${DEB_BUILD}/{DEBIAN,${OPT_PATH},usr/bin,etc/init.d}
     #~ mkdir -p ${DEB_BUILD}/{var/log/tsm,var/cache/tsmjbb,etc/tsm}
@@ -116,24 +117,24 @@ rpm2dir()
 #~ ; This file is the default one created for ${SHORT_ORG} by ${EMAIL_MAINTAINER}.
 #~ ; The sample one provided by IBM is on /${OPT_PATH}/client/ba/bin/tsmjbbd.ini.smp
 #~ ; and contain the description for all settings
-#~ 
+#~
 #~ [JournalSettings]
 #~ Errorlog=/var/log/tsm/tsmjbb_error.log
 #~ Journaldir=/var/cache/tsmjbb
-#~ 
-#~ 
+#~
+#~
 #~ [JournalExcludeList]
-#~ ;   Note that this list contains the journal database files.                  
+#~ ;   Note that this list contains the journal database files.
 #~ *.jdb.jbbdb
 #~ *.jdbInc.jbbdb
-#~ 
-#~ 
+#~
+#~
 #~ [JournaledFileSystemSettings]
 #~ JournaledFileSystems=/home
-#~ 
+#~
 #~ EOF
     #~ #
-    #~ # 
+    #~ #
     #~ #
     #~ # DEBIAN control
     #~ cat > ${DEB_BUILD}/DEBIAN/control << EOF
@@ -167,9 +168,9 @@ rpm2dir()
 #~ CONF_FILE=/etc/tsm/tsmjbbd.ini
 #~ DIR_LOG=/var/log/tsm
 #~ PIDFILE=/var/run/tsmjbbd.pid
-#~ 
+#~
 #~ . /lib/lsb/init-functions
-#~ 
+#~
 #~ start_tsmjbbd()
 #~ {
     #~ log_begin_msg "Starting TSM scheduler ..."
@@ -182,7 +183,7 @@ rpm2dir()
     #~ start-stop-daemon -Kqop ${PIDFILE} || log_end_msg 1
     #~ log_end_msg 0
 #~ }
-#~ 
+#~
 #~ case "$1" in
   #~ start)
     #~ start_tsmjbbd
@@ -198,7 +199,7 @@ rpm2dir()
     #~ log_success_msg "Usage: /etc/init.d/tsm {start|stop|restart}"
     #~ exit 1
 #~ esac
-#~ 
+#~
 #~ exit 0
 #~ EOF
     #~ #
@@ -435,8 +436,8 @@ EOF
 - configure dsm.sys and dsm.opt
 - inform the tsm manager about your config
 - test your config with "dsmc i" until it works
-- update-rc.d tsm
-- /etc/init.d/tsm start
+- systemctl enable tsm
+- systemctl start tsm
 EOF
     #
     #
@@ -473,24 +474,28 @@ if [ "$1" = "configure" ]; then
         if LC_ALL=C dsmc query schedule 2>&1 | grep "There are no schedules associated with this node" > /dev/null ; then
             echo " - tsm configuration is good and planning is disabled"
             echo " - if you need a planning, configure it and then"
-            echo "   - update-rc.d tsm defaults"
-            echo "   - invoke-rc.d tsm start"
-            invoke-rc.d tsm stop > /dev/null
-            update-rc.d -f tsm remove >/dev/null
+            echo "   - systemctl enable tsm"
+            echo "   - systemctl start tsm"
+            systemctl stop tsm 2>&1 >/dev/null
+            systemctl disable tsm 2>&1 >/dev/null
+            systemctl daemon-reload 2>&1 >/dev/null
         else
             echo " - tsm configuration is good and planning is enabled"
             echo " - enabling the tsm daemon"
-            systemctl enable /etc/systemd/system/tsm.service >/dev/null
-            systemctl restart tsm.service || exit $?
+            systemctl daemon-reload 2>&1 >/dev/null
+            systemctl enable tsm 2>&1 > /dev/null
+            systemctl restart tsm || exit $?
         fi
     else
         echo " - tsm is not configured or the configuration is broken"
         echo " - we will not launch the daemon tsm"
         echo " - when tsm will be well configured and the schedule planned, do:"
-        echo "   - update-rc.d tsm defaults"
-        echo "   - invoke-rc.d tsm start"
-        systemctl stop tsm.service > /dev/null
-        systemctl disable tsm.service >/dev/null
+        echo "   - systemctl daemon-reload"
+        echo "   - systemctl enable tsm"
+        echo "   - systemctl start tsm"
+        systemctl stop tsm.service 2>&1 >/dev/null
+        systemctl disable tsm.service 2>&1 > /dev/null
+        systemctl daemon-reload 2>&1 > /dev/null
     fi
 fi
 EOF
@@ -504,9 +509,10 @@ EOF
 set -e
 
 if [ "$1" = "remove" ]; then
-	ldconfig
-    invoke-rc.d tsm stop > /dev/null
-	update-rc.d tsm remove >/dev/null
+    ldconfig
+    systemctl stop tsm >& /dev/null
+    systemctl disable tsm >& /dev/null
+    systemctl daemon-reload >& /dev/null
 fi
 
 EOF
@@ -548,9 +554,53 @@ EOF
 
 ###########################################################
 # INTEGRATION
-wrap_integration()
+wrap_integration_cli()
 {
-    OBJ=integration
+    OBJ="integration-cli"
+
+    # constructed variable
+    define_variable
+    DEB_VER=${ddeb_ver[${OBJ}]}
+    DEBNAME=${SHORT_ORG,,}-${TSM_NAME,,}-${OBJ}
+    DEB_BUILD=${TSM_ROOT}/${DEBNAME}_${TSM_VER}-${DEB_VER}_amd64
+
+
+    cd ${TSM_ROOT}
+
+    [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
+    mkdir -p ${DEB_BUILD}/{usr/bin,DEBIAN}
+
+    #
+    #
+    # TSM CONFIGURE TOOL WRITTEN BY cED
+    cp ~/packaging/tsm/tsm-configure ${DEB_BUILD}/usr/bin/tsm-configure
+    chmod a+x ${DEB_BUILD}/usr/bin/tsm-configure
+    cd ${TSM_ROOT}
+    #
+    #
+    # DEBIAN control
+    cat > ${DEB_BUILD}/DEBIAN/control << EOF
+Package: ${DEBNAME}
+Version: ${TSM_VER}-${DEB_VER}
+Architecture: amd64
+Depends: wget, ${SHORT_ORG,,}-${TSM_NAME,,}-ba
+Maintainer: ${EMAIL_MAINTAINER}
+Section: main
+Priority: extra
+Description: integration in command line for TSM @ ${SHORT_ORG}
+ Integration for TSM
+ TSM stands for Tivoli Storage Manager and it is a solution for backuping is
+ machine at ${SHORT_ORG}.
+EOF
+    #
+    #
+    # construct the package
+    fakeroot dpkg -b ${DEB_BUILD}
+}
+
+wrap_integration_gtk()
+{
+    OBJ="integration-gtk"
 
     # constructed variable
     define_variable
@@ -572,7 +622,7 @@ wrap_integration()
     cat > ${DEB_BUILD}/${OPT_PATH}/bin/notify-send-tsm.start  << EOF
 #!/bin/bash
 # 60000 ms= 1min
-?notify-send -i /usr/share/pixmaps/tsm-unige.png --expire-time=60000 "Sauvegarde Start" \\
+notify-send -i /usr/share/pixmaps/tsm-unige.png --expire-time=60000 "Sauvegarde Start" \\
   "Lancement de la sauvegarde de votre machine par TSM sur les serveurs de l'UniGE."
 EOF
     #
@@ -590,13 +640,6 @@ EOF
     chmod a+x ${DEB_BUILD}/${OPT_PATH}/bin/notify-send-tsm.stop
     #
     #
-    # TSM CONFIGURE TOOL WRITTEN BY cED
-    cp ~/packaging/tsm/tsm-configure ${DEB_BUILD}/usr/bin/tsm-configure
-    wget -qO - http://sos.unige.ch/servers.txt | grep -vE "^#" > ${DEB_BUILD}/etc/adsm/servers.txt
-    chmod a+x ${DEB_BUILD}/usr/bin/tsm-configure
-    cd ${TSM_ROOT}
-    #
-    #
     # DESKTOP tsm-configure
     wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm-configure.png http://ubuntu.unige.ch/img/icon/tsm-configure.png
     cat > ${DEB_BUILD}/usr/share/applications/tsm-configure.desktop << EOF
@@ -604,7 +647,7 @@ EOF
 Name=tsm-configure
 Comment=Configure TSM the UniGE way
 Comment[fr]=Configurer TSM à la sauce UniGE
-Exec=gksu tsm-configure
+Exec=gksu tsm-configure gtk
 Icon=tsm-configure.png
 Terminal=False
 Type=Application
@@ -617,7 +660,7 @@ EOF
 Package: ${DEBNAME}
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
-Depends: libnotify-bin, zenity, gksu, wget, ${SHORT_ORG,,}-${TSM_NAME,,}-ba
+Depends: libnotify-bin, zenity, gksu, ${SHORT_ORG,,}-${TSM_NAME,,}-ba, ${SHORT_ORG,,}-${TSM_NAME,,}-integration-cli
 Maintainer: ${EMAIL_MAINTAINER}
 Section: main
 Priority: extra
@@ -663,7 +706,7 @@ all_in_one()
     fi
 
     #
-    # 
+    #
     echo "rsync data of on ${OBJ}"
     for SUB_OBJ in ${DEB_TO_INCLUDE}
     do
@@ -693,7 +736,7 @@ all_in_one()
             echo "###############" >> ${DEB_BUILD}/DEBIAN/postinst
             sed -n '2,$p' ${SUB_DEB_BUILD}/DEBIAN/postinst >> ${DEB_BUILD}/DEBIAN/postinst
         else
-            echo "✘"        
+            echo "✘"
         fi
         echo -n "  - postrm… "
         if test -f ${SUB_DEB_BUILD}/DEBIAN/postrm
@@ -903,7 +946,8 @@ then
     echo
     echo " - unige integration"
     echo "   -----------------"
-    wrap_integration | sed -u "s|^|     |"
+    wrap_integration_cli | sed -u "s|^|     |"
+    wrap_integration_gtk | sed -u "s|^|     |"
 fi
 
 if test "${IS_WRAP_ALL_IN_ONE}" = "True"
@@ -912,7 +956,7 @@ then
     echo " - all in one"
     echo "   ----------"
     all_in_one | sed -u "s|^|     |"
-  
+
 fi
 
 
@@ -920,5 +964,3 @@ echo
 echo "check the new package created"
 echo "-----------------------------"
 last_output | sed -u "s|^|  |"
-
-
