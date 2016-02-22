@@ -48,7 +48,8 @@ if [[ ${is_configured} -eq 0  ]]; then
             echo "* Réinitialisation de la configuration TSM *"
             echo "********************************************"
             echo "Votre configuration tsm est déjà configurée."
-            echo "Souhaitez-vous réinitialiser cette configuration?"
+            echo "Souhaitez-vous réinitialiser cette configuration ?"
+            echo "Choisissez 'N' pour une redécouverte de planning."
             read -p "Réinitialiser [o/N] : " reset
             while true ; do
                 if [[ ( -z ${reset,,} ) || ( ${reset,,} = "o" ) ]]; then
@@ -61,7 +62,7 @@ if [[ ${is_configured} -eq 0  ]]; then
                 read -p "Réinitialiser [o/N] : " reset
             done
         elif [[ $CLI_OR_GTK = "gtk" ]]; then
-            zenity --question --text="Votre configuration tsm est déjà configurée.\nSouhaitez-vous réinitialiser cette configuration?"
+            zenity --question --text="Votre configuration tsm est déjà configurée.\nSouhaitez-vous réinitialiser cette configuration?\nChoisissez 'Non' pour une redécouverte de planning."
             if [[ $? -eq 0 ]]; then
                 RESET="True"
             else
@@ -70,6 +71,7 @@ if [[ ${is_configured} -eq 0  ]]; then
         fi
     fi
 fi
+echo ""
 
 if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
     if [[ $CLI_OR_GTK = "cli" ]]; then
@@ -153,6 +155,40 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
             fi
         done
         #
+        desktop_or_server="server"
+        if [[ ( -e /opt/uau/tsm/share/template_dsm.sys_desktop ) && ( -e /opt/uau/tsm/share/template_dsm.sys_server ) ]]; then
+            if [[ $CLI_OR_GTK = "gtk" ]]; then
+                serveur_ou_station=$(zenity --title="Choix de votre type de sauvegarde" \
+                                            --text="Vous avez le choix entre:" \
+                                            --list --column="type" "Serveur" "Station de Travail")
+                if [[ ${serveur_ou_station} = "Serveur" ]]; then
+                    desktop_or_server="server"
+                elif [[ ${serveur_ou_station} = "Station de Travail" ]]; then
+                    desktop_or_server="desktop"
+                fi
+            elif [[ $CLI_OR_GTK = "cli" ]]; then
+                echo "********************************************"
+                echo " choix de votre type de sauvegarde          "
+                echo "********************************************"
+                echo "Vous avez le choix entre :"
+                echo " - de station de travail (T)"
+                echo " - de serveur (S)."
+                while true; do
+                    read -p "Serveur/station de Travail (S/T) : " desktop_or_server
+                    if [[ ${desktop_or_server,,} = "s" ]]; then
+                        desktop_or_server="server"
+                        break
+                    fi
+                    if [[ ${desktop_or_server,,} = "t" ]]; then
+                        desktop_or_server="desktop"
+                        break
+                    fi
+                done
+            fi
+        fi
+        echo ""
+        fn_template_dsm_sys="/opt/uau/tsm/share/template_dsm.sys_${desktop_or_server}"
+        #
         if [[ $CLI_OR_GTK = "cli" ]]; then
             echo "********************************************"
             echo "* test de connexion sur les serveurs       *"
@@ -167,17 +203,16 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
         cat /etc/adsm/servers.txt \
         |   while read line
             do
-                server=$(echo $line | cut -d " " -f1)
+                serveraddress=$(echo $line | cut -d " " -f1)
+                servername=$(echo ${serveraddress} | sed 's|.unige.ch||')
                 port=$(echo $line | cut -d " " -f2)
-                servername=$(echo ${server} | sed 's|.unige.ch||')
-                echo "SERVERNAME ${servername}"
-                echo "    NODENAME          ${nodename}"
-                echo "    TCPSERVERADDRESS  ${server}"
-                echo "    TCPPORT           ${port}"
-                echo "    PASSWORDACCESS    generate"
-                echo "    SCHEDLOGRETENTION 7 D"
-
-                echo ""
+                cat ${fn_template_dsm_sys} \
+                | sed -e "s|tc_servername|${servername}|" \
+                      -e "s|tc_nodename|${nodename}|" \
+                      -e "s|tc_serveradress|${serveraddress}|" \
+                      -e "s|tc_port|${port}|"
+               # for an easy sed
+               echo ""
             done >> ${DSM_SYS_DB_FN}
         old_dir_conf="/etc/adsm/backup.$(date +"%Y.%m.%d_%H.%M.%S")"
         mkdir ${old_dir_conf}
@@ -311,9 +346,9 @@ else
     systemctl enable tsm >& /dev/null
     systemctl start tsm >& /dev/null
     if [[ $CLI_OR_GTK = "cli" ]]; then
-        echo "****************************************"
-        echo "* Planning découvert                   *"
-        echo "****************************************"
+        echo "********************************************"
+        echo "* Planning découvert                       *"
+        echo "********************************************"
         echo ""
         echo "Activation du démon TSM."
         echo "Si vous souhaitez enlever le planning, désactivez-le par WTSM :"

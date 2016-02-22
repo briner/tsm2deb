@@ -568,7 +568,7 @@ wrap_integration_cli()
     cd ${TSM_ROOT}
 
     [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
-    mkdir -p ${DEB_BUILD}/{usr/bin,DEBIAN}
+    mkdir -p ${DEB_BUILD}/{usr/bin,DEBIAN,${OPT_PATH}/share}
 
     #
     #
@@ -576,6 +576,29 @@ wrap_integration_cli()
     cp ~/packaging/tsm/tsm-configure ${DEB_BUILD}/usr/bin/tsm-configure
     chmod a+x ${DEB_BUILD}/usr/bin/tsm-configure
     cd ${TSM_ROOT}
+
+    #
+    # tsm template for server
+    cat > ${DEB_BUILD}/${OPT_PATH}/share/template_dsm.sys_server << eof
+SERVERNAME tc_servername
+    NODENAME          tc_nodename
+    TCPSERVERADDRESS  tc_serveradress
+    TCPPORT           tc_port
+    PASSWORDACCESS    generate
+    SCHEDLOGRETENTION 7 D
+eof
+    #
+    # tsm template for desktop
+cat > ${DEB_BUILD}/${OPT_PATH}/share/template_dsm.sys_desktop<< eof
+SERVERNAME tc_servername
+NODENAME          tc_nodename
+TCPSERVERADDRESS  tc_serveradress
+TCPPORT           tc_port
+PASSWORDACCESS    generate
+PRENSCHEDULECMD   /opt/uau/tsm/bin/notify-send-tsm.start
+POSTNSCHEDULECMD  /opt/uau/tsm/bin/notify-send-tsm.stop
+SCHEDLOGRETENTION 7 D
+eof
     #
     #
     # DEBIAN control
@@ -613,7 +636,7 @@ wrap_integration_gtk()
 
     [ -d ${DEB_BUILD} ] && rm -fr ${DEB_BUILD}
     mkdir -p ${DEB_BUILD}/{usr/share/pixmaps,usr/share/applications}
-    mkdir -p ${DEB_BUILD}/{${TSM_CONF_DIR},usr/bin,DEBIAN,${OPT_PATH}/bin}
+    mkdir -p ${DEB_BUILD}/{${TSM_CONF_DIR},usr/bin,DEBIAN,${OPT_PATH}/bin,${OPT_PATH}/share}
 
     #
     #
