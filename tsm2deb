@@ -234,6 +234,7 @@ wrap_crypt()
     # DEBIAN control
     cat > ${DEB_BUILD}/DEBIAN/control << EOF
 Package: ${DEBNAME}
+Conflicts:${SHORT_ORG,,}-${TSM_NAME,,}-all
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
 Maintainer: ${EMAIL_MAINTAINER}
@@ -275,6 +276,7 @@ wrap_ssl()
     # DEBIAN control
     cat > ${DEB_BUILD}/DEBIAN/control << EOF
 Package: ${DEBNAME}
+Conflicts:${SHORT_ORG,,}-${TSM_NAME,,}-all
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
 Maintainer: ${EMAIL_MAINTAINER}
@@ -328,6 +330,7 @@ wrap_api()
     #
     cat > ${DEB_BUILD}/DEBIAN/control << EOF
 Package: ${DEBNAME}
+Conflicts:${SHORT_ORG,,}-${TSM_NAME,,}-all
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
 Maintainer: ${EMAIL_MAINTAINER}
@@ -451,6 +454,7 @@ Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
 Depends: ${DEPENDS}
 Recommends: ${RECOMMENDS}
+Conflicts:${SHORT_ORG,,}-${TSM_NAME,,}-all
 Maintainer: ${EMAIL_MAINTAINER}
 Section: main/home/briner/packaging/tsm/7.1.3//cpio_/opt/tivoli/tsm
 Priority: extra
@@ -586,18 +590,32 @@ SERVERNAME tc_servername
     TCPPORT           tc_port
     PASSWORDACCESS    generate
     SCHEDLOGRETENTION 7 D
+    **
+    ** Exclu les clichés de btrfs
+    ** Exclude */.snapshots/.../*
+    **
+    ** Exclu les disques montés
+    ** EXCLUDE "/mnt/.../*"
+    ** EXCLUDE "/media/.../*"
 eof
     #
     # tsm template for desktop
 cat > ${DEB_BUILD}/${OPT_PATH}/share/template_dsm.sys_desktop<< eof
 SERVERNAME tc_servername
-NODENAME          tc_nodename
-TCPSERVERADDRESS  tc_serveradress
-TCPPORT           tc_port
-PASSWORDACCESS    generate
-PRENSCHEDULECMD   /opt/uau/tsm/bin/notify-send-tsm.start
-POSTNSCHEDULECMD  /opt/uau/tsm/bin/notify-send-tsm.stop
-SCHEDLOGRETENTION 7 D
+    NODENAME          tc_nodename
+    TCPSERVERADDRESS  tc_serveradress
+    TCPPORT           tc_port
+    PASSWORDACCESS    generate
+    PRENSCHEDULECMD   /opt/uau/tsm/bin/notify-send-tsm.start
+    POSTNSCHEDULECMD  /opt/uau/tsm/bin/notify-send-tsm.stop
+    SCHEDLOGRETENTION 7 D
+    **
+    ** Exclu les clichés de btrfs
+    Exclude */.snapshots/.../*
+    **
+    ** Exclu les disques montés
+    EXCLUDE "/mnt/.../*"
+    EXCLUDE "/media/.../*"
 eof
     #
     #
@@ -684,6 +702,7 @@ Package: ${DEBNAME}
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
 Depends: libnotify-bin, zenity, gksu, ${SHORT_ORG,,}-${TSM_NAME,,}-ba, ${SHORT_ORG,,}-${TSM_NAME,,}-integration-cli
+Conflicts:${SHORT_ORG,,}-${TSM_NAME,,}-all
 Maintainer: ${EMAIL_MAINTAINER}
 Section: main
 Priority: extra
@@ -800,11 +819,13 @@ all_in_one()
     DEPENDSJOIN="${ADEPENDS[*]}"
     IFS=$SAVE_IFS
     DEBIAN_DEPENDS=$(echo $DEPENDSJOIN | sed -s "s|,|, |")
+    PREFIX=${SHORT_ORG,,}-${TSM_NAME,,}
     cat > ${DEB_BUILD}/DEBIAN/control << EOF
 Package: ${DEBNAME}
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
 Depends: ${DEBIAN_DEPENDS}
+Conflicts: ${PREFIX}-crypt, ${PREFIX}-ssl, ${PREFIX}-api, ${PREFIX}-ba, , ${PREFIX}-integration-cli, ${PREFIX}-integration-gtkk"
 Maintainer: ${EMAIL_MAINTAINER}
 Section: main
 Priority: extra
