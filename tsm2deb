@@ -10,53 +10,6 @@ if [[ $(uname -m) != 'x86_64' ]] ; then
 fi
 
 
-define_variable()
-{
-    # TSM_ROOT defines the path where the rpms are. tsm4ubuntu will work
-    # in this directory
-    TSM_ROOT=~/packaging/tsm/7.1.3
-
-    # the name of the package will be
-    # <short_org>-<TSM_NAME>-{ba,api..}_<TSM_VER>-<DEB_VER>_amd64
-    # so for the current case: unige-tsm-ba_6.3.0-2_amd64.deb
-    TSM_NAME=TSM ; # usually it is "TSM"
-    TSM_CONF_DIR="/etc/adsm"
-    TSM_VER=7.1.3
-    SHORT_ORG=UniGE ; # a short name of your organisation
-
-    # where the tsm files will be installed without the first and the last "/"
-    OPT_PATH='opt/uau/tsm' ; # usually it is "opt/tivoli/tsm"
-
-    # email of the packager of these
-    EMAIL_MAINTAINER='Cedric BRINER <Cedric.Briner@UniGE.ch>'
-
-    #
-    # this variable define the name of the rpm for each element
-    # this are the file under ls ${TSM_ROOT} once you untar
-    # the file dowloaded 6.4.1.0-TIV-TSMBAC-LinuxX86.tar
-    unset drpm
-    declare -Ag drpm
-    drpm["crypt"]="gskcrypt64-8.0.50.44.linux.x86_64.rpm"
-    drpm["ssl"]="gskssl64-8.0.50.44.linux.x86_64.rpm"
-    drpm["api"]="TIVsm-API64.x86_64.rpm"
-    drpm["ba"]="TIVsm-BA.x86_64.rpm"
-    #~ drpm["jbb"]="TIVsm-JBB.x86_64.rpm"
-
-    #
-    # this variable define of the version of packaging for each element
-    # you should be "0" for your first time.
-    unset ddeb_ver
-    declare -Ag ddeb_ver
-    ddeb_ver["crypt"]="10"
-    ddeb_ver["ssl"]="10"
-    ddeb_ver["api"]="10"
-    ddeb_ver["ba"]="10"
-    #~ ddeb_ver["jbb"]="0"
-    ddeb_ver["integration-cli"]="10" ; # this is only used at the University of Geneva
-    ddeb_ver["integration-gtk"]="10" ; # this is only used at the University of Genev
-    ddeb_ver["all"]="10" ; # this is only used for the option -1
-}
-
 rpm2dir()
 {
     define_variable
@@ -853,7 +806,7 @@ Package: ${DEBNAME}
 Version: ${TSM_VER}-${DEB_VER}
 Architecture: amd64
 Depends: ${DEBIAN_DEPENDS}
-Conflicts: ${PREFIX}-crypt, ${PREFIX}-ssl, ${PREFIX}-api, ${PREFIX}-ba, , ${PREFIX}-integration-cli, ${PREFIX}-integration-gtkk"
+Conflicts: ${PREFIX}-crypt, ${PREFIX}-ssl, ${PREFIX}-api, ${PREFIX}-ba, ${PREFIX}-integration-cli, ${PREFIX}-integration-gtk
 Maintainer: ${EMAIL_MAINTAINER}
 Section: main
 Priority: extra
@@ -883,7 +836,7 @@ echo "do fo eg: sudo dpkg  -i ${TSM_ROOT}/*deb"
 usage () {
 	scriptname=$(basename ${0})
    cat <<EOF
-Usage: $scriptname -esabc1
+Usage: $scriptname -esabc1 <configuration_file>
        usually we do:
          - to do a package per rpm
            $scriptname -esabc
@@ -957,6 +910,21 @@ done
 
 
 shift $((OPTIND-1))
+
+fnconfiguration=$1
+echo ${fnconfiguration}
+fnconfiguration="$(realpath ${fnconfiguration})"
+if [[ ! -f ${fnconfiguration} ]]; then
+    echo "file(${fnconfiguration}) not found. Exit !"
+    usage
+    exit 1
+fi
+
+define_variable()
+{
+    source ${fnconfiguration}
+}
+
 
 if test "${IS_EXTRACT}" = "True"
 then

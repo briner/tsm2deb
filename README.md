@@ -6,7 +6,7 @@ a script to nicely package tsm for debian and derivatives (Mint, Ubuntu…)
 Attention
 ---------
 this will only work to create deb for amd64
-so, if 
+so, if
 ```
 uname -m == 'x86_64'
 ```
@@ -30,21 +30,22 @@ usage
 -----
  - setup
 ```bash
-TSM_DIR=~/packaging/tsm/7.1.0.1
+TSM_DIR=~/packaging/tsm/7.1.3
 mkdir -p ${TSM_DIR}
 cd ${TSM_DIR}
+wget ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v7r1/Linux/LinuxX86/BA/v713/7.1.3.0-TIV-TSMBAC-LinuxX86.tar
 ```
- - download [7.1.0.1-TIV-TSMBAC-LinuxX86.tar](ftp://public.dhe.ibm.com/storage/tivoli-storage-management/patches/client/v7r1/Linux/LinuxX86/BA/v710/7.1.0.1-TIV-TSMBAC-LinuxX86.tar)
-  - found on [IBM Tivoli Storage Manager (TSM) client 7.1.0.x interim fix downloads](http://www-01.ibm.com/support/docview.wss?uid=swg24036985)
- - untar it: 
+
+  untar it:
 ```bash
-tar -xf 7.1.0.1-TIV-TSMBAC-LinuxX86.tar
+tar -xf 7.1.3.0-TIV-TSMBAC-LinuxX86.tar
 ```
- - download the script tsm2deb and save it to ${TSM_DIR}
+ - download tsm2deb, and tsm2deb.conf  and save it to ${TSM_DIR}
 ```bash
-wget https://raw.github.com/briner/tsm2deb/7.1.0.1/tsm2deb
+wget https://raw.github.com/briner/tsm2deb/7.1.0.3/tsm2deb
+wget https://raw.github.com/briner/tsm2deb/7.1.0.3/tsm2deb.conf
 ```
- - edit the variable defined in define_variable in tsm2deb
+ - edit the variable defined in define_variable in tsm2deb.conf
   - TSM_ROOT
   - TSM_NAME
   - TSM_VER
@@ -52,13 +53,13 @@ wget https://raw.github.com/briner/tsm2deb/7.1.0.1/tsm2deb
   - OPT_PATH
   - EMAIL_MAINTAINER
   - all the drpm which should match the ```ls -l ${TSM_DIR}/*.rpm```
-  - all the ddeb_ver which should be 0 when doing your first packaging 
+  - all the ddeb_ver which should be 0 when doing your first packaging
     and the get increased by one at each new version.
  - wrap them all
 ```bash
 cd ${TSM_DIR}
 chmod +x tsm2deb
-./tsm2deb -esabc1
+./tsm2deb -esabc1 tsm2deb.conf
 ```
  - then install
   - the all in one package : ..tsm-all
