@@ -47,14 +47,14 @@ define_variable()
     # you should be "0" for your first time.
     unset ddeb_ver
     declare -Ag ddeb_ver
-    ddeb_ver["crypt"]="0"
-    ddeb_ver["ssl"]="0"
-    ddeb_ver["api"]="0"
-    ddeb_ver["ba"]="0"
+    ddeb_ver["crypt"]="10"
+    ddeb_ver["ssl"]="10"
+    ddeb_ver["api"]="10"
+    ddeb_ver["ba"]="10"
     #~ ddeb_ver["jbb"]="0"
-    ddeb_ver["integration-cli"]="0" ; # this is only used at the University of Geneva
-    ddeb_ver["integration-gtk"]="0" ; # this is only used at the University of Geneva
-    ddeb_ver["all"]="0" ; # this is only used for the option -1
+    ddeb_ver["integration-cli"]="10" ; # this is only used at the University of Geneva
+    ddeb_ver["integration-gtk"]="10" ; # this is only used at the University of Genev
+    ddeb_ver["all"]="10" ; # this is only used for the option -1
 }
 
 rpm2dir()
@@ -372,6 +372,10 @@ wrap_ba()
     rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/opt/tivoli/tsm/ ${DEB_BUILD}/${OPT_PATH}/
     #
     #
+    # create /etc/tsm pointing to /etc/adsm
+    if [[ ${TSM_CONF_DIR} != "/etc/tsm" ]]; then
+        ln -s /etc/tsm ${DEB_BUILD}/${TSM_CONF_DIR}
+    fi
     # push the dsm.opt and dsm.sys in ${TSM_CONF_DIR} with a soft link
     mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys.smp ${DEB_BUILD}/${TSM_CONF_DIR}
     mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt.smp ${DEB_BUILD}/${TSM_CONF_DIR}
@@ -591,12 +595,24 @@ SERVERNAME tc_servername
     PASSWORDACCESS    generate
     SCHEDLOGRETENTION 7 D
     **
-    ** Exclu les clichés de btrfs
-    ** Exclude */.snapshots/.../*
-    **
-    ** Exclu les disques montés
-    ** EXCLUDE "/mnt/.../*"
-    ** EXCLUDE "/media/.../*"
+    ** use less memory
+    MEMORYEFficientbackup yes
+    *********************************
+    * EXCLUSION                     *
+    *********************************
+    * use : dsmc query inclexcl
+    * to check how the following
+    *  exclusion are treated by dsmc
+    *********************************
+    * Exclu les clichés de btrfs
+    exclude "/.../.snapshots/.../*"
+    * Exclu les clichés de zfs
+    exclude "/.../.zfs/.../*"
+    * Exclu les disques montés
+    exclude "/mnt/.../*"
+    exclude "/media/.../*"
+    exclude "/run/.../gvfs/.../*"
+    exclude "/home/.../.gvfs/.../*"
 eof
     #
     # tsm template for desktop
@@ -610,12 +626,24 @@ SERVERNAME tc_servername
     POSTNSCHEDULECMD  /opt/uau/tsm/bin/notify-send-tsm.stop
     SCHEDLOGRETENTION 7 D
     **
-    ** Exclu les clichés de btrfs
-    Exclude */.snapshots/.../*
-    **
-    ** Exclu les disques montés
-    EXCLUDE "/mnt/.../*"
-    EXCLUDE "/media/.../*"
+    ** use less memory
+    MEMORYEFficientbackup yes
+    *********************************
+    * EXCLUSION                     *
+    *********************************
+    * use : dsmc query inclexcl
+    * to check how the following
+    *  exclusion are treated by dsmc
+    *********************************
+    * Exclu les clichés de btrfs
+    exclude "/.../.snapshots/.../*"
+    * Exclu les clichés de zfs
+    exclude "/.../.zfs/.../*"
+    * Exclu les disques montés
+    exclude "/mnt/.../*"
+    exclude "/media/.../*"
+    exclude "/run/.../gvfs/.../*"
+    exclude "/home/.../.gvfs/.../*"
 eof
     #
     #
