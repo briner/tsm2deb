@@ -640,7 +640,8 @@ wrap_integration_gtk()
     #
     #
     # GUI NOTIFICATION start
-    wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm-unige.png http://ubuntu.unige.ch/img/icon/ubuntu-at-unige.png
+    cp ${DEB_BUILD}/../ubuntu-at-unige.png ${DEB_BUILD}/usr/share/pixmaps/ubuntu-at-unige.png
+    #wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm-unige.png http://ubuntu.unige.ch/img/icon/ubuntu-at-unige.png
     cat > ${DEB_BUILD}/${OPT_PATH}/bin/notify-send-tsm.start  << EOF
 #!/bin/bash
 # 60000 ms= 1min
@@ -663,7 +664,8 @@ EOF
     #
     #
     # DESKTOP tsm-configure
-    wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm-configure.png http://ubuntu.unige.ch/img/icon/tsm-configure.png
+    cp ${DEB_BUILD}/../tsm-configure.png ${DEB_BUILD}/usr/share/pixmaps/tsm-configure.png
+    # wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm-configure.png http://ubuntu.unige.ch/img/icon/tsm-configure.png
     cat > ${DEB_BUILD}/usr/share/applications/tsm-configure.desktop << EOF
 [Desktop Entry]
 Name=tsm-configure
