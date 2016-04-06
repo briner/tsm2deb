@@ -321,14 +321,28 @@ wrap_ba()
     mkdir -p ${DEB_BUILD}/{DEBIAN,usr/bin,var/log/tsm,${OPT_PATH}/bin}
     mkdir -p ${DEB_BUILD}/{${TSM_CONF_DIR},etc/systemd/system/}
     mkdir -p ${DEB_BUILD}/{usr/share/pixmaps,usr/share/applications}
-    mkdir -p ${DEB_BUILD}/usr/share/doc/${DEBNAME}
+    mkdir -p ${DEB_BUILD}/{usr/share/doc/${DEBNAME},etc/logrotate.d}
     rsync -aHl cpio_${drpm[${OBJ}]%.rpm}/opt/tivoli/tsm/ ${DEB_BUILD}/${OPT_PATH}/
     #
     #
     # create /etc/tsm pointing to /etc/adsm
     if [[ ${TSM_CONF_DIR} != "/etc/tsm" ]]; then
-        ln -s /etc/tsm ${DEB_BUILD}/${TSM_CONF_DIR}
+        ln -s ${TSM_CONF_DIR} ${DEB_BUILD}/etc/tsm
     fi
+    # logrotate
+    cat > ${DEB_BUILD}/etc/logrotate.d/tsm << EOF
+/var/log/tsm/*.log {
+    compress
+    dateext
+    notifempty
+    missingok
+    nocreate
+
+    maxage 60
+    rotate 99
+    size 10M
+}
+EOF
     # push the dsm.opt and dsm.sys in ${TSM_CONF_DIR} with a soft link
     mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.sys.smp ${DEB_BUILD}/${TSM_CONF_DIR}
     mv ${DEB_BUILD}/${OPT_PATH}/client/ba/bin/dsm.opt.smp ${DEB_BUILD}/${TSM_CONF_DIR}
@@ -403,7 +417,7 @@ EOF
     #
     # DEBIAN control
     PREFIX=${SHORT_ORG,,}-${TSM_NAME,,}
-    DEPENDS="${PREFIX}-crypt, ${PREFIX}-ssl, ${PREFIX}-api"
+    DEPENDS="${PREFIX}-crypt, ${PREFIX}-ssl, ${PREFIX}-api, logrotate"
     RECOMMENDS="default-jre"
     cat > ${DEB_BUILD}/DEBIAN/control << EOF
 Package: ${DEBNAME}
@@ -490,7 +504,7 @@ EOF
 Name=dsmj
 Comment=tsm gui
 Exec=dsmj
-Icon=dsmwin32.png
+Icon=dsmwin32
 Terminal=false
 Type=Application
 Categories=System;
@@ -500,7 +514,7 @@ EOF
 Name=dsmc
 Comment=tsm command line interface
 Exec=dsmc
-Icon=dsmwin32.png
+Icon=dsmwin32
 Terminal=true
 Type=Application
 Categories=System;
@@ -534,7 +548,10 @@ wrap_integration_cli()
     #
     #
     # TSM CONFIGURE TOOL WRITTEN BY cED
-    cp ~/packaging/tsm/tsm-configure ${DEB_BUILD}/usr/bin/tsm-configure
+    cat ~/packaging/tsm/tsm-configure  \
+    | sed -e "s|_OPT_PATH_|${OPT_PATH}|"\
+        -e "s|_TSM_CONF_DIR_|${TSM_CONF_DIR}|" \
+      > ${DEB_BUILD}/usr/bin/tsm-configure
     chmod a+x ${DEB_BUILD}/usr/bin/tsm-configure
     cd ${TSM_ROOT}
 
@@ -575,8 +592,8 @@ SERVERNAME tc_servername
     TCPSERVERADDRESS  tc_serveradress
     TCPPORT           tc_port
     PASSWORDACCESS    generate
-    PRENSCHEDULECMD   /opt/uau/tsm/bin/notify-send-tsm.start
-    POSTNSCHEDULECMD  /opt/uau/tsm/bin/notify-send-tsm.stop
+    PRENSCHEDULECMD   /${OPT_PATH}/tsm/bin/notify-send-tsm.start
+    POSTNSCHEDULECMD  /${OPT_PATH}/tsm/bin/notify-send-tsm.stop
     SCHEDLOGRETENTION 7 D
     **
     ** use less memory
@@ -640,12 +657,17 @@ wrap_integration_gtk()
     #
     #
     # GUI NOTIFICATION start
-    cp ${DEB_BUILD}/../ubuntu-at-unige.png ${DEB_BUILD}/usr/share/pixmaps/ubuntu-at-unige.png
+    if [[ -f ${TSM2DEB_ROOT}/${SHORT_ORG,,}.png ]]; then
+        cp ${TSM2DEB_ROOT}/${SHORT_ORG,,}.png ${DEB_BUILD}/usr/share/pixmaps/tsm-${SHORT_ORG,,}.png
+    else
+        echo "no png for short_org, let's use the default"
+        cp ${TSM2DEB_ROOT}/default.png ${DEB_BUILD}/usr/share/pixmaps/tsm-${SHORT_ORG,,}.png
+    fi
     #wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm-unige.png http://ubuntu.unige.ch/img/icon/ubuntu-at-unige.png
     cat > ${DEB_BUILD}/${OPT_PATH}/bin/notify-send-tsm.start  << EOF
 #!/bin/bash
 # 60000 ms= 1min
-notify-send -i /usr/share/pixmaps/tsm-unige.png --expire-time=60000 "Sauvegarde Start" \\
+notify-send -i /usr/share/pixmaps/tsm-${SHORT_ORG,,}.png --expire-time=60000 "Sauvegarde Start" \\
   "Lancement de la sauvegarde de votre machine par TSM sur les serveurs de l'UniGE."
 EOF
     #
@@ -656,7 +678,7 @@ EOF
     cat > ${DEB_BUILD}/${OPT_PATH}/bin/notify-send-tsm.stop  << EOF
 #!/bin/bash
 # 1800000 ms= 30min
-notify-send -i /usr/share/pixmaps/tsm-unige.png  --expire-time=1800000 "Sauvegarde Stop" \\
+notify-send -i /usr/share/pixmaps/tsm-${SHORT_ORG,,}.png  --expire-time=1800000 "Sauvegarde Stop" \\
   "La sauvegarde de votre machines par TSM sur les seveurs de l'UniGE a abouti."
 EOF
     #
@@ -664,7 +686,7 @@ EOF
     #
     #
     # DESKTOP tsm-configure
-    cp ${DEB_BUILD}/../tsm-configure.png ${DEB_BUILD}/usr/share/pixmaps/tsm-configure.png
+    cp ${TSM2DEB_ROOT}/tsm-configure.png ${DEB_BUILD}/usr/share/pixmaps/tsm-configure.png
     # wget -q -O ${DEB_BUILD}/usr/share/pixmaps/tsm-configure.png http://ubuntu.unige.ch/img/icon/tsm-configure.png
     cat > ${DEB_BUILD}/usr/share/applications/tsm-configure.desktop << EOF
 [Desktop Entry]
@@ -672,10 +694,10 @@ Name=tsm-configure
 Comment=Configure TSM the UniGE way
 Comment[fr]=Configurer TSM à la sauce UniGE
 Exec=gksu tsm-configure gtk
-Icon=tsm-configure.png
-Terminal=False
+Icon=tsm-configure
+Terminal=false
 Type=Application
-Categories=System;unige;
+Categories=System;
 EOF
     #
     #
@@ -954,7 +976,7 @@ fi
 if test "${IS_WRAP_CRYPT}" = "True"
 then
     echo
-    echo " - wrap_crypt"
+    echo " - wrap crypt"
     echo "   ----------"
     wrap_crypt | sed -u "s|^|     |"
 fi
