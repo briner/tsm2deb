@@ -1,10 +1,12 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 SCRIPTNAME=$(basename ${0})
-DSM_SYS_DB_FN="/etc/adsm/dsm.sys.all"
+DSM_SYS_DB_FN="${TSM_CONF_DIR}/dsm.sys.all"
 WINDOW_ICON_FP="/usr/share/pixmaps/tsm-configure.png"
 CMD_IS_CONFIGURED="LC_ALL=C dsmc query fi <&- >& /dev/null"
 FOUND_A_SERVERNAME="False"
+OPT_PATH=_OPT_PATH_
+TSM_CONF_DIR=_TSM_CONF_DIR_
 
 usage ()
 {
@@ -105,7 +107,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
     wget -qO - http://sos.unige.ch/servers.txt | grep -vE "^#" > ${sos_servers_fn}
     if test -s ${sos_servers_fn}
     then
-        cp ${sos_servers_fn} /etc/adsm/servers.txt
+        cp ${sos_servers_fn} ${TSM_CONF_DIR}/servers.txt
     fi
     rm -f ${sos_servers_fn}
     #
@@ -143,7 +145,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
                                  --add-password="mot de passe TSM" \
                                  --separator="|")
                 if test "$?" -ne "0" ; then
-                    rm -f /etc/adsm/dsmerror.log
+                    rm -f ${TSM_CONF_DIR}/dsmerror.log
                     exit
                 fi
                 nodename=$(echo $cfgpass | cut -d "|" -f1)
@@ -156,7 +158,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
         done
         #
         desktop_or_server="server"
-        if [[ ( -e /opt/uau/tsm/share/template_dsm.sys_desktop ) && ( -e /opt/uau/tsm/share/template_dsm.sys_server ) ]]; then
+        if [[ ( -e /${OPT_PATH}/share/template_dsm.sys_desktop ) && ( -e /${OPT_PATH}/share/template_dsm.sys_server ) ]]; then
             if [[ $CLI_OR_GTK = "gtk" ]]; then
                 serveur_ou_station=$(zenity --title="Choix de votre type de sauvegarde" \
                                             --text="Vous avez le choix entre:" \
@@ -187,7 +189,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
             fi
         fi
         echo ""
-        fn_template_dsm_sys="/opt/uau/tsm/share/template_dsm.sys_${desktop_or_server}"
+        fn_template_dsm_sys="/${OPT_PATH}/share/template_dsm.sys_${desktop_or_server}"
         #
         if [[ $CLI_OR_GTK = "cli" ]]; then
             echo "********************************************"
@@ -200,7 +202,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
         echo "* this file was generated to allow ${SCRIPTNAME}" > ${DSM_SYS_DB_FN}
         echo "* to have a config described to allow dsmc to work" >> ${DSM_SYS_DB_FN}
         echo "* as dsmc does not allow to have this information as parameter" >> ${DSM_SYS_DB_FN}
-        cat /etc/adsm/servers.txt \
+        cat ${TSM_CONF_DIR}/servers.txt \
         |   while read line
             do
                 serveraddress=$(echo $line | cut -d " " -f1)
@@ -214,12 +216,12 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
                # for an easy sed
                echo ""
             done >> ${DSM_SYS_DB_FN}
-        old_dir_conf="/etc/adsm/backup.$(date +"%Y.%m.%d_%H.%M.%S")"
+        old_dir_conf="${TSM_CONF_DIR}/backup.$(date +"%Y.%m.%d_%H.%M.%S")"
         mkdir ${old_dir_conf}
-        [[ -e /etc/adsm/dsm.sys ]] && cp /etc/adsm/dsm.sys ${old_dir_conf}
-        [[ -e /etc/adsm/dsm.opt ]] && cp /etc/adsm/dsm.opt ${old_dir_conf}
-        ln -sf ${DSM_SYS_DB_FN} /etc/adsm/dsm.sys
-        echo "DOMAIN     ALL-LOCAL" > /etc/adsm/dsm.opt
+        [[ -e ${TSM_CONF_DIR}/dsm.sys ]] && cp ${TSM_CONF_DIR}/dsm.sys ${old_dir_conf}
+        [[ -e ${TSM_CONF_DIR}/dsm.opt ]] && cp ${TSM_CONF_DIR}/dsm.opt ${old_dir_conf}
+        ln -sf ${DSM_SYS_DB_FN} ${TSM_CONF_DIR}/dsm.sys
+        echo "DOMAIN     ALL-LOCAL" > ${TSM_CONF_DIR}/dsm.opt
         #
         # test de server one by one
         if [[ $CLI_OR_GTK = "cli" ]]; then
@@ -231,9 +233,9 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
                     echo " - identifié !"
                     # As we have a problem for the gtk part of it, we will rewrite
                     # dsm.sys as a way to tell the following that we found a servername
-                    rm /etc/adsm/dsm.sys
-                    date +"* written by ${SCRIPTNAME} on %Y.%m.%d %H:%M:%S"  > /etc/adsm/dsm.sys
-                    sed -n "/SERVERNAME ${servername}/"',/^$/ {/^$/ !p}'  ${DSM_SYS_DB_FN} >> /etc/adsm/dsm.sys
+                    rm ${TSM_CONF_DIR}/dsm.sys
+                    date +"* written by ${SCRIPTNAME} on %Y.%m.%d %H:%M:%S"  > ${TSM_CONF_DIR}/dsm.sys
+                    sed -n "/SERVERNAME ${servername}/"',/^$/ {/^$/ !p}'  ${DSM_SYS_DB_FN} >> ${TSM_CONF_DIR}/dsm.sys
                     break
                 else
                     echo ""
@@ -241,7 +243,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
             done
         elif [[ $CLI_OR_GTK = "gtk" ]]; then
             pourcent=0
-            steps=$(( 100 / $(wc -l /etc/adsm/servers.txt | cut -d " " -f1) ))
+            steps=$(( 100 / $(wc -l ${TSM_CONF_DIR}/servers.txt | cut -d " " -f1) ))
             for servername in $(grep SERVERNAME ${DSM_SYS_DB_FN} | cut -d " " -f2) ; do
                 pourcent=$(( ${pourcent} + ${steps} ))
                 echo "# sur le compte ${servername}"
@@ -256,9 +258,9 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
                     # pass the value servername outside of the loop. Instead we
                     # create a dsm.sys containing the servername !
                     # write dsm.sys
-                    rm /etc/adsm/dsm.sys
-                    date +"* written by ${SCRIPTNAME} on %Y.%m.%d %H:%M:%S"  > /etc/adsm/dsm.sys
-                    sed -n "/SERVERNAME ${servername}/"',/^$/ {/^$/ !p}'  ${DSM_SYS_DB_FN} >> /etc/adsm/dsm.sys
+                    rm ${TSM_CONF_DIR}/dsm.sys
+                    date +"* written by ${SCRIPTNAME} on %Y.%m.%d %H:%M:%S"  > ${TSM_CONF_DIR}/dsm.sys
+                    sed -n "/SERVERNAME ${servername}/"',/^$/ {/^$/ !p}'  ${DSM_SYS_DB_FN} >> ${TSM_CONF_DIR}/dsm.sys
                     break
                 fi
             done | zenity --progress \
@@ -268,7 +270,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
                     --auto-kill
             if test "$?" -ne "0"
             then
-                rm -f /etc/adsm/dsmerror.log
+                rm -f ${TSM_CONF_DIR}/dsmerror.log
                 exit
             fi
         fi
@@ -323,7 +325,7 @@ fi
 
 #
 # Configured
-NODENAME=$(grep -i nodename /etc/adsm/dsm.sys  | sed -e "s|NOD[^ \t]*||" -e  "s| ||g")
+NODENAME=$(grep -i nodename ${TSM_CONF_DIR}/dsm.sys  | sed -e "s|NOD[^ \t]*||" -e  "s| ||g")
 if LC_ALL=C dsmc query schedule | grep -q "There are no schedules associated with this node."
 then
     systemctl stop tsm >& /dev/null
