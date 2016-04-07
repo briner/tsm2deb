@@ -23,7 +23,7 @@ It mainly rewraps the rpm file so that you can use it on debian and derivatives.
 prerequesite
 ------------
 ```bash
-aptitude install sysvinit-utils fakeroot cpio rpm2cpio bash rsync imagemagick unzip
+aptitude install sysvinit-utils fakeroot cpio rpm2cpio bash rsync imagemagick unzip git
 ```
 
 usage
@@ -40,10 +40,9 @@ wget ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/clie
 ```bash
 tar -xf 7.1.3.0-TIV-TSMBAC-LinuxX86.tar
 ```
- - download tsm2deb, and tsm2deb.conf  and save it to ${TSM_DIR}
+ - clone the tsm2deb for the 7.1.3-systemd branch
 ```bash
-wget https://raw.github.com/briner/tsm2deb/7.1.0.3/tsm2deb
-wget https://raw.github.com/briner/tsm2deb/7.1.0.3/tsm2deb.conf
+# clone the 7.1.3-systemd branch
 ```
  - edit the variable defined in define_variable in tsm2deb.conf
   - TSM_ROOT
