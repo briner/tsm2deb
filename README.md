@@ -43,6 +43,7 @@ tar -xf 7.1.3.0-TIV-TSMBAC-LinuxX86.tar
  - clone the tsm2deb for the 7.1.3-systemd branch
 ```bash
 # clone the 7.1.3-systemd branch
+git clone -b 7.1.3-systemd https://github.com/briner/tsm2deb ./
 ```
  - edit the variable defined in define_variable in tsm2deb.conf
   - TSM_ROOT
