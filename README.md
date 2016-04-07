@@ -33,18 +33,22 @@ usage
 TSM_DIR=~/packaging/tsm/7.1.3
 mkdir -p ${TSM_DIR}
 cd ${TSM_DIR}
-wget ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v7r1/Linux/LinuxX86/BA/v713/7.1.3.0-TIV-TSMBAC-LinuxX86.tar
 ```
 
-  untar it:
-```bash
-tar -xf 7.1.3.0-TIV-TSMBAC-LinuxX86.tar
-```
- - clone the tsm2deb for the 7.1.3-systemd branch
+ - download tsm2deb
 ```bash
 # clone the 7.1.3-systemd branch
 git clone -b 7.1.3-systemd https://github.com/briner/tsm2deb ./
 ```
+
+- download tsm from ibm
+```
+wget ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v7r1/Linux/LinuxX86/BA/v713/7.1.3.0-TIV-TSMBAC-LinuxX86.tar
+
+# untar it:
+tar -xf 7.1.3.0-TIV-TSMBAC-LinuxX86.tar
+```
+ - clone the tsm2deb for the 7.1.3-systemd branch
  - edit the variable defined in define_variable in tsm2deb.conf
   - TSM_ROOT
   - TSM_NAME
