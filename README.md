@@ -48,7 +48,6 @@ wget ftp://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/clie
 # untar it:
 tar -xf 7.1.3.0-TIV-TSMBAC-LinuxX86.tar
 ```
- - clone the tsm2deb for the 7.1.3-systemd branch
  - edit the variable defined in define_variable in tsm2deb.conf
   - TSM_ROOT
   - TSM_NAME
