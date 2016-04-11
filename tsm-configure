@@ -158,7 +158,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
         done
         #
         desktop_or_server="server"
-        if [[ ( -e /${OPT_PATH}/share/template_dsm.sys_desktop ) && ( -e /${OPT_PATH}/share/template_dsm.sys_server ) ]]; then
+        if [[ ( -e /${OPT_PATH}/share/template_desktop_dsm.sys ) && ( -e /${OPT_PATH}/share/template_server_dsm.sys ) ]]; then
             if [[ $CLI_OR_GTK = "gtk" ]]; then
                 serveur_ou_station=$(zenity --title="Choix de votre type de sauvegarde" \
                                             --text="Vous avez le choix entre:" \
@@ -189,7 +189,7 @@ if [[ ( ${is_configured} -ne 0 ) ||  ( ${RESET} = "True"  ) ]]; then
             fi
         fi
         echo ""
-        fn_template_dsm_sys="/${OPT_PATH}/share/template_dsm.sys_${desktop_or_server}"
+        fn_template_dsm_sys="/${OPT_PATH}/share/template_${desktop_or_server}_dsm.sys"
         #
         if [[ $CLI_OR_GTK = "cli" ]]; then
             echo "********************************************"

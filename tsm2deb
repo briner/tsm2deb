@@ -329,6 +329,8 @@ wrap_ba()
     if [[ ${TSM_CONF_DIR} != "/etc/tsm" ]]; then
         ln -s ${TSM_CONF_DIR} ${DEB_BUILD}/etc/tsm
     fi
+    # copy README.dsm.sys
+    cp ${TSM2DEB_ROOT}/README.dsm.sys ${DEB_BUILD}/${TSM_CONF_DIR}/README.dsm.sys
     # logrotate
     cat > ${DEB_BUILD}/etc/logrotate.d/tsm << EOF
 /var/log/tsm/*.log {
@@ -557,65 +559,10 @@ wrap_integration_cli()
 
     #
     # tsm template for server
-    cat > ${DEB_BUILD}/${OPT_PATH}/share/template_dsm.sys_server << eof
-SERVERNAME tc_servername
-    NODENAME          tc_nodename
-    TCPSERVERADDRESS  tc_serveradress
-    TCPPORT           tc_port
-    PASSWORDACCESS    generate
-    SCHEDLOGRETENTION 7 D
-    **
-    ** use less memory
-    MEMORYEFficientbackup yes
-    *********************************
-    * EXCLUSION                     *
-    *********************************
-    * use : dsmc query inclexcl
-    * to check how the following
-    *  exclusion are treated by dsmc
-    *********************************
-    * Exclu les clichés de btrfs
-    exclude "/.../.snapshots/.../*"
-    * Exclu les clichés de zfs
-    exclude "/.../.zfs/.../*"
-    * Exclu les disques montés
-    exclude "/mnt/.../*"
-    exclude "/media/.../*"
-    exclude "/run/.../gvfs/.../*"
-    exclude "/home/.../.gvfs/.../*"
-eof
+    cp ${TSM2DEB_ROOT}/template_desktop_dsm.sys ${DEB_BUILD}/${OPT_PATH}/share/template_desktop_dsm.sys
     #
     # tsm template for desktop
-cat > ${DEB_BUILD}/${OPT_PATH}/share/template_dsm.sys_desktop<< eof
-SERVERNAME tc_servername
-    NODENAME          tc_nodename
-    TCPSERVERADDRESS  tc_serveradress
-    TCPPORT           tc_port
-    PASSWORDACCESS    generate
-    PRENSCHEDULECMD   /${OPT_PATH}/tsm/bin/notify-send-tsm.start
-    POSTNSCHEDULECMD  /${OPT_PATH}/tsm/bin/notify-send-tsm.stop
-    SCHEDLOGRETENTION 7 D
-    **
-    ** use less memory
-    MEMORYEFficientbackup yes
-    *********************************
-    * EXCLUSION                     *
-    *********************************
-    * use : dsmc query inclexcl
-    * to check how the following
-    *  exclusion are treated by dsmc
-    *********************************
-    * Exclu les clichés de btrfs
-    exclude "/.../.snapshots/.../*"
-    * Exclu les clichés de zfs
-    exclude "/.../.zfs/.../*"
-    * Exclu les disques montés
-    exclude "/mnt/.../*"
-    exclude "/media/.../*"
-    exclude "/run/.../gvfs/.../*"
-    exclude "/home/.../.gvfs/.../*"
-eof
-    #
+    cp ${TSM2DEB_ROOT}/template_desktop_dsm.sys ${DEB_BUILD}/${OPT_PATH}/share/template_server_dsm.sys
     #
     # DEBIAN control
     cat > ${DEB_BUILD}/DEBIAN/control << EOF

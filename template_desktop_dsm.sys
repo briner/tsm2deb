@@ -1,0 +1,27 @@
+SERVERNAME tc_servername
+    NODENAME          tc_nodename
+    TCPSERVERADDRESS  tc_serveradress
+    TCPPORT           tc_port
+    PASSWORDACCESS    generate
+    PRENSCHEDULECMD   /${OPT_PATH}/tsm/bin/notify-send-tsm.start
+    POSTNSCHEDULECMD  /${OPT_PATH}/tsm/bin/notify-send-tsm.stop
+    SCHEDLOGRETENTION 7 D
+    **
+    ** use less memory
+    MEMORYEFficientbackup yes
+    **
+    ** Exclusion
+    ** Le fichier README.dsm.sys donne des indications
+    ** compréhensible quant à la rédaction de ces règles.
+    **
+    ** Exclu les clichés de btrfs
+    exclude "/.../.snapshots/.../*"
+    ** Exclu les clichés de zfs
+    exclude "/.../.zfs/.../*"
+    ** Exclu les disques montés
+    exclude "/mnt/.../*"
+    exclude "/media/.../*"
+    exclude "/run/.../gvfs/.../*"
+    exclude "/home/.../.gvfs/.../*"
+    ** Exclu le cache
+    exclude "/home/.../.cache/../*"

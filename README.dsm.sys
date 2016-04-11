@@ -1,0 +1,38 @@
+*** Règle d'ordonnancement des lignes :
+* include / exclude sont interpretés à partir de la dernière à la première directive
+* la première qui correspond est tenue en compte.
+*
+*** Les caractères et chaînes spéciaux :
+* '*' : Remplace une chaîne quelconque
+* '?' : Remplace un caractère quelconque
+* '/.../' : Remplace un chemin quelconque dans l'arborescence.
+*
+*** Pour tester ces règles d'inclusion/exclusion, on utilise:
+* dsmc query inclexcl
+* 
+*** Exemples
+* /.../* : Correspond à toute l'arborescence
+* /.../cache/.../* : Tous le contenu de tous les dossiers "cache"
+*
+* voici quelques examples:
+* -----------------------
+** Exclu tout autre fichier
+* EXCLUDE "/.../*"
+*
+** Inclu les fichiers de configuration de tsm 
+* INCLUDE "/opt/tivoli/tsm/client/ba/bin/dsm.opt"
+* INCLUDE "/opt/tivoli/tsm/client/ba/bin/dsm.sys"
+* INCLUDE "/etc/rc.d/init.d/dsmcSchedule"
+*
+** Inclu les comptes utilisateurs et root
+* INCLUDE "/root/.../*"
+* INCLUDE "/home/.../*"
+*
+** Exclu les disques montés
+* EXCLUDE "/mnt/.../*"
+*
+** Exclu les médias montés
+* EXCLUDE "/mnt/.../*"
+*
+** Exclu le cache de gnome
+* EXCLUDE "/.../.cache/.../*"
