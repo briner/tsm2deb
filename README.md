@@ -9,5 +9,5 @@ version/distribution
 --------------------
 - client [7.1.3-systemd](https://github.com/briner/tsm2deb/tree/7.1.3-systemd) tested for:
  - ubuntu xenial 16.04
- - debian jessie
+ - debian jessie (dsmj is broken)
 
