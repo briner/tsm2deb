@@ -11,3 +11,6 @@ version/distribution
  - ubuntu xenial 16.04
  - debian jessie (dsmj is broken)
 
+- client [7.1.6-systemd](https://github.com/briner/tsm2deb/tree/7.1.3-systemd) tested for:
+ - debian jessie (dsmj is broken)
+
